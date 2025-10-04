@@ -513,31 +513,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-## 📞 Contact & Support
-
-### Project Links
-
-- **Website**: https://agrichain.example.com
-- **Documentation**: https://docs.agrichain.example.com
-- **GitHub**: https://github.com/yourusername/agrichain
-- **Discord**: https://discord.gg/agrichain
-- **Twitter**: [@AgriChainDApp](https://twitter.com/AgriChainDApp)
-
-### Get Help
-
-- 📧 **Email**: support@agrichain.example.com
-- 💬 **Discord**: Join our community server
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/agrichain/issues)
-- 📖 **Docs**: [Documentation Portal](https://docs.agrichain.example.com)
-
-### Team
-
-- **Lead Developer**: Your Name - [GitHub](https://github.com/yourname)
-- **Smart Contract**: Contributor Name
-- **Frontend**: Contributor Name
-- **Design**: Contributor Name
-
 ## 🙏 Acknowledgments
 
 - OpenZeppelin for secure smart contract libraries
@@ -554,28 +529,6 @@ SOFTWARE.
 - [x] Role management
 - [x] Payment distribution
 - [x] QR code generation
-
-### Phase 2: Enhancement 🚧
-- [ ] IPFS integration for metadata
-- [ ] Mobile app (React Native)
-- [ ] Multi-language support
-- [ ] Advanced analytics
-- [ ] IoT sensor integration
-
-### Phase 3: Scale 📅
-- [ ] Cross-chain bridge
-- [ ] DAO governance
-- [ ] Token economics
-- [ ] Marketplace integration
-- [ ] Insurance products
-
-### Phase 4: Enterprise 🔮
-- [ ] API for third parties
-- [ ] White-label solutions
-- [ ] Government partnerships
-- [ ] Global expansion
-- [ ] Sustainability metrics
-
 ---
 
 <div align="center">
