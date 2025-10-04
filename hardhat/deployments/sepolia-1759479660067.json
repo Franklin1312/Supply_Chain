@@ -1,0 +1,12 @@
+{
+  "network": "sepolia",
+  "contractAddress": "0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164",
+  "deployer": "0x45D246d7749936E61399E61Fc7e04e090aEDECE1",
+  "timestamp": "2025-10-03T08:21:00.066Z",
+  "roles": {
+    "FARMER_ROLE": "0x7c6181838a71a779e445600d4c6ecbe16bacf2b3c5bda69c29fada66d1b645d1",
+    "TRANSPORT_ROLE": "0xb82a77b83aa57abb9bcfbacbdfb3201de26ecd2b35d0d6cf6c3b9bb2cb7026c4",
+    "MIDDLEMAN_ROLE": "0xca8f4d80b9a601aeb89c087307d2965aac1bb4efd751b2467c503e418ab0a286",
+    "RETAILER_ROLE": "0x2a5f906c256a5d799494fcd066e1f6c077689de1cdb65052a1624de4bace99bf"
+  }
+}

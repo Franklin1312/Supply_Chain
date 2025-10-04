@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href='favicon.png.jpg'> 
+    <title>Agricultural Supply Chain - Blockchain Transparency</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-brand">
+                    <i class="fas fa-seedling"></i>
+                    <span>AgriChain</span>
+                </div>
+                <div class="nav-menu">
+                    <a href="#home" class="nav-link active">Home</a>
+                    <a href="#admin" class="nav-link" id="adminLink" style="display: none;">Admin</a>
+                    <a href="#create" class="nav-link" id="createLink" style="display: none;">Create Batch</a>
+                    <a href="#track" class="nav-link">Track Product</a>
+                    <a href="#purchase" class="nav-link" id="purchaseLink" style="display: none;">Purchase</a>
+                    <a href="#updateState" class="nav-link" id="updateLink" style="display: none;">Update State</a>
+                </div>
+                <button id="connectWallet" class="btn btn-primary">
+                    <i class="fas fa-wallet"></i> Connect Wallet
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Transparent Agricultural Supply Chain</h1>
+                <p>Empowering farmers with fair prices and consumers with trust through blockchain technology</p>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-box"></i>
+                        <h3 id="totalBatches">0</h3>
+                        <p>Total Batches</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3 id="totalFarmers">0</h3>
+                        <p>Registered Farmers</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3 id="deliveredBatches">0</h3>
+                        <p>Delivered</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Wallet Status -->
+    <div class="wallet-status" id="walletStatus" style="display: none;">
+        <div class="container">
+            <div class="status-info">
+                <span class="status-label">Connected:</span>
+                <span id="connectedAddress" class="status-value">Not Connected</span>
+                <span class="status-label">Active Role:</span>
+                <span id="activeRole" class="status-value">None</span>
+                <button id="switchRoleBtn" class="btn-small" style="display: none;">
+                    <i class="fas fa-exchange-alt"></i> Switch Role
+                </button>
+                <span class="status-label">Network:</span>
+                <span id="networkName" class="status-value">Unknown</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <section id="admin" class="section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-user-shield"></i> Admin Panel
+            </h2>
+            
+            <!-- Register User -->
+            <div class="card">
+                <h3><i class="fas fa-user-plus"></i> Register New User</h3>
+                <form id="registerUserForm">
+                    <div class="form-group">
+                        <label for="userAddress">
+                            <i class="fas fa-wallet"></i> User Wallet Address
+                        </label>
+                        <input type="text" id="userAddress" placeholder="0x..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userName">
+                            <i class="fas fa-user"></i> User Name (Optional)
+                        </label>
+                        <input type="text" id="userName" placeholder="John Doe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-clipboard-check"></i> Select Roles</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="role" value="FARMER"> Farmer
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="role" value="TRANSPORT"> Transporter
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="role" value="MIDDLEMAN"> Middleman
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="role" value="RETAILER"> Retailer
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-user-check"></i> Register User
+                    </button>
+                </form>
+            </div>
+
+            <!-- Registered Users List -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3><i class="fas fa-users"></i> Registered Users</h3>
+                <button id="loadUsersBtn" class="btn btn-primary" onclick="loadRegisteredUsers()">
+                    <i class="fas fa-sync"></i> Load Users
+                </button>
+                <div id="usersList" class="users-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create Batch Section (Farmer) -->
+    <section id="create" class="section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-plus-circle"></i> Create New Batch
+            </h2>
+            <div class="card">
+                <form id="createBatchForm">
+                    <div class="form-group">
+                        <label for="productName">
+                            <i class="fas fa-apple-alt"></i> Product Name
+                        </label>
+                        <input type="text" id="productName" placeholder="e.g., Organic Tomatoes" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantity">
+                                <i class="fas fa-weight"></i> Quantity (kg)
+                            </label>
+                            <input type="number" id="quantity" placeholder="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="farmerPrice">
+                                <i class="fas fa-dollar-sign"></i> Price (ETH)
+                            </label>
+                            <input type="number" id="farmerPrice" step="0.001" placeholder="0.1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="origin">
+                            <i class="fas fa-map-marker-alt"></i> Origin Location
+                        </label>
+                        <input type="text" id="origin" placeholder="Farm location" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="certifications">
+                            <i class="fas fa-certificate"></i> Certifications
+                        </label>
+                        <input type="text" id="certifications" placeholder="Organic, Fair Trade, etc.">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-file-alt"></i> Description
+                        </label>
+                        <textarea id="description" rows="3" placeholder="Product details..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-check"></i> Create Batch
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Track Product Section -->
+    <section id="track" class="section bg-light">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-search"></i> Track Product Journey
+            </h2>
+            <div class="card">
+                <div class="search-box">
+                    <input type="number" id="trackBatchId" placeholder="Enter Batch ID">
+                    <button id="trackBtn" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Track
+                    </button>
+                </div>
+
+                <!-- Batch Details -->
+                <div id="batchDetails" class="batch-details" style="display: none;">
+                    <div class="batch-header">
+                        <h3 id="batchProductName"></h3>
+                        <span id="batchState" class="badge"></span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <label>Batch ID</label>
+                            <span id="detailBatchId"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Farmer</label>
+                            <span id="detailFarmer"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Current Owner</label>
+                            <span id="detailOwner"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Quantity</label>
+                            <span id="detailQuantity"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Farmer Price</label>
+                            <span id="detailPrice"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Created At</label>
+                            <span id="detailCreated"></span>
+                        </div>
+                    </div>
+
+                    <!-- QR Code -->
+                    <div class="qr-section">
+                        <h4>Share this product</h4>
+                        <div id="qrCode"></div>
+                        <button id="downloadQR" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download QR Code
+                        </button>
+                    </div>
+
+                    <!-- Journey Timeline -->
+                    <div class="timeline-section">
+                        <h4>Product Journey</h4>
+                        <div id="journeyTimeline" class="timeline"></div>
+                    </div>
+
+                    <!-- Participants -->
+                    <div class="participants-section">
+                        <h4>Supply Chain Participants</h4>
+                        <div id="participantsList" class="participants-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Purchase Batch Section -->
+    <section id="purchase" class="section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-shopping-cart"></i> Purchase Batch
+            </h2>
+            <div class="card">
+                <form id="purchaseForm">
+                    <div class="form-group">
+                        <label for="purchaseBatchId">
+                            <i class="fas fa-hashtag"></i> Batch ID
+                        </label>
+                        <input type="number" id="purchaseBatchId" placeholder="Enter Batch ID" required>
+                    </div>
+
+                    <div id="paymentSplits">
+                        <h4>Payment Distribution</h4>
+                        <div class="payment-split-item">
+                            <label>Farmer Payment (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="farmer" required>
+                            <input type="text" class="split-address" placeholder="Farmer Address" required>
+                        </div>
+                        <div class="payment-split-item">
+                            <label>Transporter Fee (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="transporter">
+                            <input type="text" class="split-address" placeholder="Transporter Address">
+                        </div>
+                        <div class="payment-split-item">
+                            <label>Middleman Commission (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="middleman">
+                            <input type="text" class="split-address" placeholder="Middleman Address">
+                        </div>
+                    </div>
+
+                    <div class="total-payment">
+                        <label>Total Payment:</label>
+                        <span id="totalPayment">0 ETH</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-shopping-cart"></i> Purchase Batch
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Update State Section (Transporter) -->
+    <section id="updateState" class="section bg-light" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-truck"></i> Update Batch State
+            </h2>
+            <div class="card">
+                <form id="updateStateForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stateBatchId">
+                                <i class="fas fa-hashtag"></i> Batch ID
+                            </label>
+                            <input type="number" id="stateBatchId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newState">
+                                <i class="fas fa-exchange-alt"></i> New State
+                            </label>
+                            <select id="newState" required>
+                                <option value="">Select State</option>
+                                <option value="1">In Transit</option>
+                                <option value="2">At Middleman</option>
+                                <option value="3">In Final Transit</option>
+                                <option value="4">Delivered</option>
+                                <option value="5">Sold</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-block">
+                        <i class="fas fa-sync"></i> Update State
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Role Switcher Modal -->
+    <div id="roleSwitcherModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exchange-alt"></i> Switch Role</h3>
+                <span class="close-modal" onclick="closeRoleSwitcher()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Select your active role:</p>
+                <div id="rolesList" class="roles-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing transaction...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AgriChain - Transparent Supply Chain Platform</p>
+            <p>Powered by Blockchain Technology</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.4.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
+    <script src="qr.js"></script>
+</body>
+</html>
