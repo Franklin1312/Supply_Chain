@@ -877,158 +877,170 @@ let qrScannerActive = false;
  * Handle detected QR code data - Auto download batch info
  * @param {string} qrData - Detected QR code data
  */
+// QR Scanner State
+let qrStream = null;
+let qrScannerActive = false;
+
+/**
+ * Handle detected QR code data - Auto download batch info
+ * @param {string} qrData - Detected QR code data
+ */
 async function handleQRCodeDetected(qrData) {
     stopQRScanner();
     
     try {
+        console.log('🔍 QR Data received:', qrData);
+        
         let batchId = null;
         
         // Try to parse as JSON first
         try {
             const parsedData = JSON.parse(qrData);
+            console.log('📦 Parsed JSON:', parsedData);
             
             if (parsedData.batchId) {
                 batchId = parsedData.batchId;
             }
         } catch (jsonError) {
             // If not JSON, treat as plain batch ID
+            console.log('⚠️ Not JSON, treating as plain text');
             const trimmedData = qrData.trim();
             if (!isNaN(trimmedData) && trimmedData !== '') {
                 batchId = trimmedData;
             }
         }
         
-        if (batchId !== null) {
-            showToast('✅ QR Code detected! Fetching batch #' + batchId + '...', 'success');
+        console.log('🎯 Extracted Batch ID:', batchId);
+        
+        if (batchId !== null && batchId !== undefined) {
+            showToast('✅ QR Detected! Downloading Batch #' + batchId, 'success');
             
-            // Small delay to show the toast message
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Automatically download batch info as TXT
-            await downloadBatchInfo(batchId);
+            // Call download function directly
+            await downloadBatchInfoFromQR(batchId);
         } else {
-            showToast('⚠️ Invalid QR code - No batch ID found', 'warning');
-            console.error('QR data received:', qrData);
+            showToast('⚠️ No valid batch ID found in QR code', 'warning');
+            console.error('❌ Invalid QR data:', qrData);
         }
     } catch (error) {
-        console.error('QR handling error:', error);
-        showToast('❌ Failed to process QR code: ' + error.message, 'error');
+        console.error('❌ QR handling error:', error);
+        showToast('❌ Error: ' + error.message, 'error');
     }
 }
 
 /**
- * Download Batch Info as TXT file
+ * Download batch info as TXT - Called from QR scan
  */
-async function downloadBatchInfo(batchId) {
+async function downloadBatchInfoFromQR(batchId) {
+    console.log('📥 Starting download for batch:', batchId);
+    
     if (!contract) {
-        showToast('Please connect wallet first', 'warning');
+        showToast('❌ Contract not connected. Please connect wallet.', 'error');
         return;
     }
     
     try {
         showLoading(true);
         
-        console.log('📦 Fetching batch #' + batchId + ' from blockchain...');
+        console.log('🔗 Fetching from contract...');
         
-        // Fetch batch information from blockchain
+        // Fetch batch data
         const batch = await contract.getBatch(batchId);
-        const transactions = await contract.getBatchTransactions(batchId);
-        const participants = await contract.getBatchParticipants(batchId);
+        console.log('✅ Batch data:', batch);
         
-        // Create formatted text content
+        const transactions = await contract.getBatchTransactions(batchId);
+        console.log('✅ Transactions:', transactions);
+        
+        const participants = await contract.getBatchParticipants(batchId);
+        console.log('✅ Participants:', participants);
+        
+        // State names
         const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
         
-        let textContent = `========================================\n`;
-        textContent += `   AGRICULTURAL SUPPLY CHAIN\n`;
-        textContent += `        BATCH INFORMATION\n`;
-        textContent += `========================================\n\n`;
+        // Build text content
+        let txt = `========================================\n`;
+        txt += `   AGRICULTURAL SUPPLY CHAIN\n`;
+        txt += `        BATCH INFORMATION\n`;
+        txt += `========================================\n\n`;
         
-        textContent += `BATCH DETAILS:\n`;
-        textContent += `----------------------------------------\n`;
-        textContent += `Batch ID: ${batchId}\n`;
-        textContent += `Product Name: ${batch[3]}\n`;
-        textContent += `Quantity: ${batch[6].toString()} kg\n`;
-        textContent += `Farmer Price: ${ethers.formatEther(batch[5])} ETH\n`;
-        textContent += `Current State: ${stateNames[Number(batch[7])]}\n`;
-        textContent += `Created At: ${new Date(Number(batch[8]) * 1000).toLocaleString()}\n\n`;
+        txt += `BATCH DETAILS:\n`;
+        txt += `----------------------------------------\n`;
+        txt += `Batch ID: ${batchId}\n`;
+        txt += `Product Name: ${batch[3] || 'N/A'}\n`;
+        txt += `Quantity: ${batch[6]?.toString() || '0'} kg\n`;
+        txt += `Farmer Price: ${batch[5] ? ethers.formatEther(batch[5]) : '0'} ETH\n`;
+        txt += `Current State: ${stateNames[Number(batch[7])] || 'Unknown'}\n`;
+        txt += `Created: ${batch[8] ? new Date(Number(batch[8]) * 1000).toLocaleString() : 'N/A'}\n\n`;
         
-        textContent += `FARMER INFORMATION:\n`;
-        textContent += `----------------------------------------\n`;
-        textContent += `Farmer Address: ${batch[1]}\n`;
-        textContent += `Current Owner: ${batch[2]}\n\n`;
+        txt += `FARMER INFORMATION:\n`;
+        txt += `----------------------------------------\n`;
+        txt += `Farmer Address: ${batch[1] || 'N/A'}\n`;
+        txt += `Current Owner: ${batch[2] || 'N/A'}\n\n`;
         
-        if (participants.length > 0) {
-            textContent += `SUPPLY CHAIN PARTICIPANTS:\n`;
-            textContent += `----------------------------------------\n`;
-            participants.forEach((addr, index) => {
-                textContent += `${index + 1}. ${addr}\n`;
+        if (participants && participants.length > 0) {
+            txt += `SUPPLY CHAIN PARTICIPANTS:\n`;
+            txt += `----------------------------------------\n`;
+            participants.forEach((addr, i) => {
+                txt += `${i + 1}. ${addr}\n`;
             });
-            textContent += `\n`;
+            txt += `\n`;
         }
         
-        if (transactions.length > 0) {
-            textContent += `TRANSACTION HISTORY:\n`;
-            textContent += `----------------------------------------\n`;
-            transactions.forEach((tx, index) => {
-                textContent += `\nTransaction ${index + 1}:\n`;
-                textContent += `  From: ${tx.from}\n`;
-                textContent += `  To: ${tx.to}\n`;
-                textContent += `  Amount: ${ethers.formatEther(tx.amount)} ETH\n`;
-                textContent += `  Role: ${tx.role}\n`;
-                textContent += `  Date: ${new Date(Number(tx.timestamp) * 1000).toLocaleString()}\n`;
+        if (transactions && transactions.length > 0) {
+            txt += `TRANSACTION HISTORY:\n`;
+            txt += `----------------------------------------\n`;
+            transactions.forEach((tx, i) => {
+                txt += `\nTransaction ${i + 1}:\n`;
+                txt += `  From: ${tx.from}\n`;
+                txt += `  To: ${tx.to}\n`;
+                txt += `  Amount: ${ethers.formatEther(tx.amount)} ETH\n`;
+                txt += `  Role: ${tx.role}\n`;
+                txt += `  Date: ${new Date(Number(tx.timestamp) * 1000).toLocaleString()}\n`;
                 if (tx.description) {
-                    textContent += `  Description: ${tx.description}\n`;
+                    txt += `  Description: ${tx.description}\n`;
                 }
             });
-            textContent += `\n`;
+            txt += `\n`;
         }
         
-        textContent += `========================================\n`;
-        textContent += `Generated: ${new Date().toLocaleString()}\n`;
-        textContent += `Verified on Blockchain Network\n`;
-        textContent += `========================================\n\n`;
+        txt += `========================================\n`;
+        txt += `Generated: ${new Date().toLocaleString()}\n`;
+        txt += `Blockchain Verified\n`;
+        txt += `========================================\n`;
         
-        textContent += `AUTHENTICITY VERIFICATION:\n`;
-        textContent += `This document contains blockchain-verified\n`;
-        textContent += `information and can be independently verified\n`;
-        textContent += `on the Ethereum blockchain.\n`;
+        console.log('📄 Text content created, length:', txt.length);
         
-        // Download as .txt file
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        // Create and download file
+        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Batch-${batchId}-Details-${Date.now()}.txt`;
+        link.download = `Batch-${batchId}-${Date.now()}.txt`;
         
-        // Trigger download
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         
-        // Cleanup
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 100);
-        
-        showToast('✅ Batch #' + batchId + ' details downloaded!', 'success');
-        console.log('✅ Download complete');
+        console.log('✅ File downloaded successfully!');
+        showToast('✅ Batch #' + batchId + ' downloaded as TXT!', 'success');
         
     } catch (error) {
-        console.error('Download error:', error);
+        console.error('❌ Download failed:', error);
         
-        // Better error messages
-        if (error.message.includes('Batch not found') || error.message.includes('does not exist')) {
-            showToast('❌ Batch #' + batchId + ' not found on blockchain', 'error');
+        if (error.message.includes('Batch not found')) {
+            showToast('❌ Batch #' + batchId + ' does not exist', 'error');
+        } else if (error.message.includes('call revert')) {
+            showToast('❌ Contract error - batch may not exist', 'error');
         } else {
-            showToast('❌ Failed to download: ' + error.message, 'error');
+            showToast('❌ Failed: ' + error.message, 'error');
         }
     } finally {
         showLoading(false);
     }
 }
 
-// Make downloadBatchInfo available globally
-window.downloadBatchInfo = downloadBatchInfo;
 /**
  * Stop QR Scanner
  */
@@ -1052,9 +1064,8 @@ function stopQRScanner() {
     }
 }
 
-
 /**
- * Start QR Code Scanner with improved feedback
+ * Start QR Scanner
  */
 async function scanQRCode() {
     const scannerContainer = document.getElementById('qrScannerContainer');
@@ -1062,11 +1073,10 @@ async function scanQRCode() {
     
     try {
         if (!contract) {
-            showToast('⚠️ Please connect your wallet first', 'warning');
+            showToast('⚠️ Connect wallet first', 'warning');
             return;
         }
         
-        // Request camera access
         qrStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }
         });
@@ -1076,26 +1086,25 @@ async function scanQRCode() {
         scannerContainer.style.display = 'block';
         qrScannerActive = true;
         
-        showToast('📷 QR Scanner started. Point at QR code', 'info');
+        showToast('📷 Scanner active - Point at QR code', 'info');
         
-        // Start scanning
         requestAnimationFrame(scanFrame);
         
     } catch (error) {
-        console.error('Camera access error:', error);
+        console.error('Camera error:', error);
         
         if (error.name === 'NotAllowedError') {
-            showToast('❌ Camera permission denied. Please allow camera access.', 'error');
+            showToast('❌ Camera access denied', 'error');
         } else if (error.name === 'NotFoundError') {
-            showToast('❌ No camera found on this device', 'error');
+            showToast('❌ No camera found', 'error');
         } else {
-            showToast('❌ Failed to access camera: ' + error.message, 'error');
+            showToast('❌ Camera error: ' + error.message, 'error');
         }
     }
 }
 
 /**
- * Scan frame for QR code
+ * Scan video frame for QR code
  */
 function scanFrame() {
     if (!qrScannerActive) return;
@@ -1113,15 +1122,17 @@ function scanFrame() {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (code) {
-            // QR code detected - process it
+            console.log('✅ QR Code detected!');
             handleQRCodeDetected(code.data);
-            return; // Stop scanning after detection
+            return;
         }
     }
     
-    // Continue scanning
     requestAnimationFrame(scanFrame);
 }
+
+// Make function available globally
+window.downloadBatchInfoFromQR = downloadBatchInfoFromQR;
 
 function initializeEventListeners() {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
