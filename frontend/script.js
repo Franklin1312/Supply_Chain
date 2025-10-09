@@ -1,12 +1,12 @@
-// script.js - Frontend JavaScript for Supply Chain DApp
+
+// script.js - Frontend JavaScript for Supply Chain DApp with Modern Features
 // IMPORTANT: Update CONTRACT_ADDRESS after deployment
 
 // ==================== CONFIGURATION ====================
 const CONFIG = {
-    CONTRACT_ADDRESS: "0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164", //  Verified on Sepolia
+    CONTRACT_ADDRESS: "0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164",
     NETWORK_ID: 11155111, // Sepolia testnet
     NETWORK_NAME: "Sepolia",
-    // Use multiple RPC endpoints for fallback
     RPC_URLS: [
         "https://rpc.sepolia.org",
         "https://eth-sepolia.public.blastapi.io",
@@ -844,7 +844,6 @@ const CONTRACT_ABI = [
       "type": "function"
     }
   ];
-
 // State
 let provider, signer, contract, userAddress;
 let userRoles = [], activeRole = null;
@@ -855,11 +854,14 @@ let stats = { totalBatches: 0, totalFarmers: 0, deliveredBatches: 0 };
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     loadFromLocalStorage();
-    checkURLParameters();
+    initializeTheme();
+    initializeLanguage();
 });
 
 function initializeEventListeners() {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('languageBtn').addEventListener('click', toggleLanguageDropdown);
     document.getElementById('registerUserForm').addEventListener('submit', registerUser);
     document.getElementById('createBatchForm').addEventListener('submit', createBatch);
     document.getElementById('trackBtn').addEventListener('click', trackBatch);
@@ -874,9 +876,99 @@ function initializeEventListeners() {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', handleNavigation);
     });
+    
+    document.querySelectorAll('.language-option').forEach(option => {
+        option.addEventListener('click', () => changeLanguage(option.dataset.lang, option.dataset.code));
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.language-selector')) {
+            document.getElementById('languageDropdown').classList.remove('show');
+        }
+    });
 }
 
-// Connect Wallet
+// Theme Toggle
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    
+    showToast(`Switched to ${newTheme} mode`, 'success');
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.querySelector('#themeToggle i');
+    icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+}
+
+// Language Support
+function initializeLanguage() {
+    const savedLang = localStorage.getItem('language') || 'en';
+    const savedCode = localStorage.getItem('languageCode') || 'en';
+    currentLanguage = savedLang;
+    document.getElementById('currentLang').textContent = savedCode.toUpperCase();
+    updatePageText();
+}
+
+function toggleLanguageDropdown() {
+    document.getElementById('languageDropdown').classList.toggle('show');
+}
+
+async function changeLanguage(lang, code) {
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    localStorage.setItem('languageCode', code);
+    document.getElementById('currentLang').textContent = code.toUpperCase();
+    document.getElementById('languageDropdown').classList.remove('show');
+    
+    document.querySelectorAll('.language-option').forEach(opt => {
+        opt.classList.remove('active');
+        if (opt.dataset.lang === lang) opt.classList.add('active');
+    });
+    
+    if (lang === 'en') {
+        updatePageText();
+    } else {
+        await translatePage(lang);
+    }
+    
+    showToast(`Language changed to ${code.toUpperCase()}`, 'success');
+}
+
+function updatePageText() {
+    const trans = translations[currentLanguage] || translations.en;
+    document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (trans[key]) {
+            el.textContent = trans[key];
+        }
+    });
+}
+
+async function translatePage(targetLang) {
+    // Get all translatable elements
+    const elements = document.querySelectorAll('[data-translate]');
+    
+    for (const el of elements) {
+        const originalText = translations.en[el.getAttribute('data-translate')];
+        
+        // Call Bhashini API
+        const translatedText = await callBhashiniAPI(originalText, 'en', targetLang);
+        el.textContent = translatedText;
+    }
+}
+
+// Wallet Connection
 async function connectWallet() {
     try {
         if (!window.ethereum) {
@@ -930,7 +1022,7 @@ async function switchNetwork() {
     }
 }
 
-// Get User Roles
+// User Roles
 async function getUserRoles() {
     try {
         const roles = ['FARMER', 'TRANSPORT', 'MIDDLEMAN', 'RETAILER'];
@@ -944,7 +1036,6 @@ async function getUserRoles() {
             }
         }
         
-        // Check admin
         const adminRole = await contract.DEFAULT_ADMIN_ROLE();
         const isAdmin = await contract.hasRole(adminRole, userAddress);
         if (isAdmin) {
@@ -959,21 +1050,17 @@ async function getUserRoles() {
     }
 }
 
-// Update UI for Role
 function updateUIForRole() {
-    // Hide all sections
     document.getElementById('admin').style.display = 'none';
     document.getElementById('create').style.display = 'none';
     document.getElementById('purchase').style.display = 'none';
     document.getElementById('updateState').style.display = 'none';
     
-    // Hide all nav links
     document.getElementById('adminLink').style.display = 'none';
     document.getElementById('createLink').style.display = 'none';
     document.getElementById('purchaseLink').style.display = 'none';
     document.getElementById('updateLink').style.display = 'none';
     
-    // Show based on active role
     if (activeRole === 'ADMIN') {
         document.getElementById('admin').style.display = 'block';
         document.getElementById('adminLink').style.display = 'block';
@@ -985,19 +1072,18 @@ function updateUIForRole() {
     if (activeRole === 'RETAILER' || activeRole === 'MIDDLEMAN') {
         document.getElementById('purchase').style.display = 'block';
         document.getElementById('purchaseLink').style.display = 'block';
+        updatePurchaseFormForRole();
     }
     if (activeRole === 'TRANSPORT') {
         document.getElementById('updateState').style.display = 'block';
         document.getElementById('updateLink').style.display = 'block';
     }
     
-    // Show role switcher if multiple roles
     if (userRoles.length > 1) {
         document.getElementById('switchRoleBtn').style.display = 'inline-flex';
     }
 }
 
-// Update Wallet UI
 function updateWalletUI() {
     document.getElementById('walletStatus').style.display = 'block';
     document.getElementById('connectedAddress').textContent = 
@@ -1006,9 +1092,31 @@ function updateWalletUI() {
     document.getElementById('networkName').textContent = CONFIG.NETWORK_NAME;
     
     const btn = document.getElementById('connectWallet');
-    btn.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+    btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Connected</span>';
     btn.style.background = '#27ae60';
     btn.disabled = true;
+}
+
+function updatePurchaseFormForRole() {
+    const farmerSplit = document.getElementById('farmerPaymentSplit');
+    const transporterSplit = document.getElementById('transporterPaymentSplit');
+    const middlemanSplit = document.getElementById('middlemanPaymentSplit');
+    
+    // Reset all to visible first
+    if (farmerSplit) farmerSplit.style.display = 'block';
+    if (transporterSplit) transporterSplit.style.display = 'block';
+    if (middlemanSplit) middlemanSplit.style.display = 'block';
+    
+    if (activeRole === 'MIDDLEMAN') {
+        // Middleman sees farmer and transporter fields only
+        if (middlemanSplit) middlemanSplit.style.display = 'none';
+    }
+    
+    if (activeRole === 'RETAILER') {
+        // Retailer sees only middleman field
+        if (farmerSplit) farmerSplit.style.display = 'none';
+        if (transporterSplit) transporterSplit.style.display = 'none';
+    }
 }
 
 // Role Switcher
@@ -1063,7 +1171,7 @@ function switchRole(role) {
     showToast(`Switched to ${role} role`, 'success');
 }
 
-// Register User (Admin)
+// Admin Functions
 async function registerUser(e) {
     e.preventDefault();
     
@@ -1086,14 +1194,12 @@ async function registerUser(e) {
             return;
         }
         
-        // Grant roles
         for (const roleName of selectedRoles) {
             const roleHash = await contract[`${roleName}_ROLE`]();
             const tx = await contract.grantUserRole(address, roleHash);
             await tx.wait();
         }
         
-        // Save to local storage
         registeredUsers.push({
             address,
             name,
@@ -1115,7 +1221,6 @@ async function registerUser(e) {
     }
 }
 
-// Load Registered Users
 function loadRegisteredUsers() {
     const usersList = document.getElementById('usersList');
     
@@ -1145,7 +1250,7 @@ function loadRegisteredUsers() {
             </div>
             <div class="user-address">${user.address}</div>
             <div class="user-roles">${rolesHTML}</div>
-            <small style="color: #95a5a6; margin-top: 0.5rem; display: block;">
+            <small style="color: var(--gray); margin-top: 0.5rem; display: block;">
                 Registered: ${new Date(user.registeredAt).toLocaleString()}
             </small>
         `;
@@ -1154,7 +1259,7 @@ function loadRegisteredUsers() {
     });
 }
 
-// Create Batch
+// Batch Functions
 async function createBatch(e) {
     e.preventDefault();
     
@@ -1202,6 +1307,7 @@ async function createBatch(e) {
         showToast(`Batch created! ID: ${batchId}`, 'success');
         e.target.reset();
         await updateStats();
+        loadMyBatches();
         
     } catch (error) {
         console.error('Create batch error:', error);
@@ -1211,7 +1317,196 @@ async function createBatch(e) {
     }
 }
 
-// Track Batch
+async function loadMyBatches() {
+    if (!contract || !userAddress) {
+        showToast('Please connect wallet first', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const list = document.getElementById('myBatchesList');
+        list.innerHTML = '<p style="text-align: center; color: var(--gray);">Loading...</p>';
+        
+        const totalBatches = await contract.nextBatchId();
+        const myBatches = [];
+        
+        for (let i = 0; i < Number(totalBatches); i++) {
+            try {
+                const batch = await contract.getBatch(i);
+                // getBatch returns an array, not an object
+                // [id, farmer, currentOwner, productName, ipfsHash, farmerPrice, quantity, state, createdAt, transactionCount]
+                if (batch[1].toLowerCase() === userAddress.toLowerCase()) {
+                    myBatches.push({
+                        id: Number(batch[0]),
+                        farmer: batch[1],
+                        currentOwner: batch[2],
+                        productName: batch[3],
+                        ipfsHash: batch[4],
+                        farmerPrice: batch[5],
+                        quantity: batch[6],
+                        state: batch[7],
+                        createdAt: batch[8],
+                        transactionCount: batch[9]
+                    });
+                }
+            } catch (e) {
+                console.log('Skipping batch', i, e.message);
+            }
+        }
+        
+        if (myBatches.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>No batches created yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        list.innerHTML = '';
+        const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
+        
+        myBatches.forEach(batch => {
+            const card = document.createElement('div');
+            card.className = 'batch-card';
+            card.onclick = () => {
+                document.getElementById('trackBatchId').value = batch.id;
+                document.querySelector('#track').scrollIntoView({ behavior: 'smooth' });
+                trackBatch();
+            };
+            
+            card.innerHTML = `
+                <div class="batch-card-header">
+                    <h4><i class="fas fa-box"></i> ${batch.productName}</h4>
+                    <span class="badge ${stateNames[Number(batch.state)].toLowerCase()}">${stateNames[Number(batch.state)]}</span>
+                </div>
+                <div class="batch-card-info">
+                    <div class="batch-info-pill">
+                        <strong>ID:</strong> ${batch.id}
+                    </div>
+                    <div class="batch-info-pill">
+                        <strong>Quantity:</strong> ${batch.quantity.toString()} kg
+                    </div>
+                    <div class="batch-info-pill">
+                        <strong>Price:</strong> ${ethers.formatEther(batch.farmerPrice)} ETH
+                    </div>
+                </div>
+                <div class="batch-card-footer">
+                    Created: ${new Date(Number(batch.createdAt) * 1000).toLocaleString()}
+                </div>
+            `;
+            
+            list.appendChild(card);
+        });
+        
+        showToast(`Found ${myBatches.length} batches`, 'success');
+        
+    } catch (error) {
+        console.error('Load batches error:', error);
+        showToast('Failed to load batches: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadMyPurchases() {
+    if (!contract || !userAddress) {
+        showToast('Please connect wallet first', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const list = document.getElementById('myPurchasesList');
+        list.innerHTML = '<p style="text-align: center; color: var(--gray);">Loading...</p>';
+        
+        const totalBatches = await contract.nextBatchId();
+        const myPurchases = [];
+        
+        for (let i = 0; i < Number(totalBatches); i++) {
+            try {
+                const batch = await contract.getBatch(i);
+                const transactions = await contract.getBatchTransactions(i);
+                
+                const isOwner = batch.currentOwner.toLowerCase() === userAddress.toLowerCase();
+                const hasTransaction = transactions.some(tx => 
+                    tx.from.toLowerCase() === userAddress.toLowerCase() || 
+                    tx.to.toLowerCase() === userAddress.toLowerCase()
+                );
+                
+                if (isOwner || hasTransaction) {
+                    myPurchases.push({ id: i, ...batch, isCurrentOwner: isOwner });
+                }
+            } catch (e) {
+                console.log('Skipping batch', i);
+            }
+        }
+        
+        if (myPurchases.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-shopping-bag"></i>
+                    <p>No purchase history yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        list.innerHTML = '';
+        const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
+        
+        myPurchases.forEach(batch => {
+            const card = document.createElement('div');
+            card.className = 'batch-card';
+            card.onclick = () => {
+                document.getElementById('trackBatchId').value = batch.id;
+                document.querySelector('#track').scrollIntoView({ behavior: 'smooth' });
+                trackBatch();
+            };
+            
+            const ownershipBadge = batch.isCurrentOwner ? 
+                '<span style="background: #27ae60; color: white; padding: 0.25rem 0.5rem; border-radius: 5px; font-size: 0.8rem;">Current Owner</span>' : 
+                '<span style="background: #95a5a6; color: white; padding: 0.25rem 0.5rem; border-radius: 5px; font-size: 0.8rem;">Past Transaction</span>';
+            
+            card.innerHTML = `
+                <div class="batch-card-header">
+                    <h4><i class="fas fa-shopping-cart"></i> ${batch.productName}</h4>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        ${ownershipBadge}
+                        <span class="badge ${stateNames[Number(batch.state)].toLowerCase()}">${stateNames[Number(batch.state)]}</span>
+                    </div>
+                </div>
+                <div class="batch-card-info">
+                    <div class="batch-info-pill">
+                        <strong>ID:</strong> ${batch.id}
+                    </div>
+                    <div class="batch-info-pill">
+                        <strong>Quantity:</strong> ${batch.quantity.toString()} kg
+                    </div>
+                    <div class="batch-info-pill">
+                        <strong>Price:</strong> ${ethers.formatEther(batch.farmerPrice)} ETH
+                    </div>
+                </div>
+                <div class="batch-card-footer">
+                    Farmer: ${batch.farmer.substring(0, 10)}... | Created: ${new Date(Number(batch.createdAt) * 1000).toLocaleString()}
+                </div>
+            `;
+            
+            list.appendChild(card);
+        });
+        
+        showToast(`Found ${myPurchases.length} transactions`, 'success');
+        
+    } catch (error) {
+        console.error('Load purchases error:', error);
+        showToast('Failed to load purchases', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
 async function trackBatch() {
     if (!contract) {
         showToast('Please connect wallet first', 'warning');
@@ -1229,11 +1524,41 @@ async function trackBatch() {
         showLoading(true);
         
         const batch = await contract.getBatch(batchId);
-        const transactions = await contract.getBatchTransactions(batchId);
-        const participants = await contract.getBatchParticipants(batchId);
+        const batchDetails = document.getElementById('batchDetails');
         
-        displayBatchDetails(batch, transactions, participants, batchId);
-        generateQRCode(batchId);
+        const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
+        const state = Number(batch.state);
+        
+        batchDetails.innerHTML = `
+            <div style="padding: 2rem; background: var(--bg-primary); border-radius: 12px; box-shadow: var(--shadow);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--light-color);">
+                    <h3 style="margin: 0; color: var(--text-dark);">${batch.productName}</h3>
+                    <span class="badge ${stateNames[state].toLowerCase()}">${stateNames[state]}</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div style="padding: 1rem; background: var(--light-color); border-radius: 8px;">
+                        <strong>Batch ID:</strong> ${batchId}
+                    </div>
+                    <div style="padding: 1rem; background: var(--light-color); border-radius: 8px;">
+                        <strong>Quantity:</strong> ${batch.quantity.toString()} kg
+                    </div>
+                    <div style="padding: 1rem; background: var(--light-color); border-radius: 8px;">
+                        <strong>Price:</strong> ${ethers.formatEther(batch.farmerPrice)} ETH
+                    </div>
+                    <div style="padding: 1rem; background: var(--light-color); border-radius: 8px;">
+                        <strong>Created:</strong> ${new Date(Number(batch.createdAt) * 1000).toLocaleString()}
+                    </div>
+                </div>
+                
+                <div style="padding: 1rem; background: var(--light-color); border-radius: 8px;">
+                    <strong>Farmer:</strong> ${batch.farmer}
+                </div>
+            </div>
+        `;
+        
+        batchDetails.style.display = 'block';
+        showToast('Batch loaded successfully!', 'success');
         
     } catch (error) {
         console.error('Track error:', error);
@@ -1243,115 +1568,6 @@ async function trackBatch() {
     }
 }
 
-// Display Batch Details
-function displayBatchDetails(batch, transactions, participants, batchId) {
-    const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
-    const state = Number(batch.state);
-    
-    document.getElementById('batchProductName').textContent = batch.productName;
-    document.getElementById('batchState').textContent = stateNames[state];
-    document.getElementById('batchState').className = 'badge ' + stateNames[state].toLowerCase();
-    
-    document.getElementById('detailBatchId').textContent = batchId;
-    document.getElementById('detailFarmer').textContent = 
-        batch.farmer.substring(0, 10) + '...' + batch.farmer.substring(32);
-    document.getElementById('detailOwner').textContent = 
-        batch.currentOwner.substring(0, 10) + '...' + batch.currentOwner.substring(32);
-    document.getElementById('detailQuantity').textContent = batch.quantity.toString() + ' kg';
-    document.getElementById('detailPrice').textContent = 
-        ethers.formatEther(batch.farmerPrice) + ' ETH';
-    document.getElementById('detailCreated').textContent = 
-        new Date(Number(batch.createdAt) * 1000).toLocaleString();
-    
-    displayTimeline(transactions);
-    displayParticipants(participants, batch.farmer);
-    
-    document.getElementById('batchDetails').style.display = 'block';
-    document.getElementById('batchDetails').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Display Timeline
-function displayTimeline(transactions) {
-    const timeline = document.getElementById('journeyTimeline');
-    timeline.innerHTML = '';
-    
-    if (transactions.length === 0) {
-        timeline.innerHTML = '<p style="text-align: center; color: #95a5a6;">No transactions yet</p>';
-        return;
-    }
-    
-    transactions.forEach(tx => {
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        
-        const content = document.createElement('div');
-        content.className = 'timeline-content';
-        
-        const amount = tx.amount > 0 ? 
-            `<strong>Amount:</strong> ${ethers.formatEther(tx.amount)} ETH<br>` : '';
-        
-        content.innerHTML = `
-            <strong>${tx.role}</strong> - ${tx.description}<br>
-            ${amount}
-            <strong>From:</strong> ${tx.from.substring(0, 10)}...<br>
-            <strong>To:</strong> ${tx.to.substring(0, 10)}...
-            <span class="time">${new Date(Number(tx.timestamp) * 1000).toLocaleString()}</span>
-        `;
-        
-        item.appendChild(content);
-        timeline.appendChild(item);
-    });
-}
-
-// Display Participants
-function displayParticipants(participants, farmer) {
-    const list = document.getElementById('participantsList');
-    list.innerHTML = '';
-    
-    participants.forEach(addr => {
-        const item = document.createElement('div');
-        item.className = 'participant-item';
-        
-        const icon = addr.toLowerCase() === farmer.toLowerCase() ? 
-            '<i class="fas fa-seedling"></i>' : '<i class="fas fa-user"></i>';
-        
-        const label = addr.toLowerCase() === farmer.toLowerCase() ? ' (Farmer)' : '';
-        
-        item.innerHTML = `
-            ${icon}
-            <span>${addr.substring(0, 10)}...${addr.substring(32)}${label}</span>
-        `;
-        
-        list.appendChild(item);
-    });
-}
-
-// Generate QR Code
-function generateQRCode(batchId) {
-    const qrContainer = document.getElementById('qrCode');
-    qrContainer.innerHTML = '';
-    
-    const url = `${window.location.origin}${window.location.pathname}?batch=${batchId}`;
-    
-    new QRCode(qrContainer, {
-        text: url,
-        width: 200,
-        height: 200,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-    });
-    
-    document.getElementById('downloadQR').onclick = () => {
-        const canvas = qrContainer.querySelector('canvas');
-        const url = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `batch-${batchId}-qr.png`;
-        link.href = url;
-        link.click();
-    };
-}
-
-// Purchase Batch
 async function purchaseBatch(e) {
     e.preventDefault();
     
@@ -1365,20 +1581,36 @@ async function purchaseBatch(e) {
         
         const batchId = document.getElementById('purchaseBatchId').value;
         const splits = [];
-        const splitItems = document.querySelectorAll('.payment-split-item');
         
-        for (const item of splitItems) {
-            const amount = item.querySelector('.split-amount').value;
-            const address = item.querySelector('.split-address').value;
-            const role = item.querySelector('.split-amount').dataset.role;
-            
-            if (amount && address && parseFloat(amount) > 0) {
-                splits.push({
-                    payee: address,
-                    amount: ethers.parseEther(amount),
-                    role: role
-                });
-            }
+        const farmerAmount = document.getElementById('farmerAmount').value;
+        const farmerAddress = document.getElementById('farmerAddress').value;
+        const transporterAmount = document.getElementById('transporterAmount').value;
+        const transporterAddress = document.getElementById('transporterAddress').value;
+        const middlemanAmount = document.getElementById('middlemanAmount').value;
+        const middlemanAddress = document.getElementById('middlemanAddress').value;
+        
+        if (farmerAmount && farmerAddress && parseFloat(farmerAmount) > 0) {
+            splits.push({
+                payee: farmerAddress,
+                amount: ethers.parseEther(farmerAmount),
+                role: "farmer"
+            });
+        }
+        
+        if (transporterAmount && transporterAddress && parseFloat(transporterAmount) > 0) {
+            splits.push({
+                payee: transporterAddress,
+                amount: ethers.parseEther(transporterAmount),
+                role: "transporter"
+            });
+        }
+        
+        if (middlemanAmount && middlemanAddress && parseFloat(middlemanAmount) > 0) {
+            splits.push({
+                payee: middlemanAddress,
+                amount: ethers.parseEther(middlemanAmount),
+                role: "middleman"
+            });
         }
         
         if (splits.length === 0) {
@@ -1406,7 +1638,6 @@ async function purchaseBatch(e) {
     }
 }
 
-// Update Batch State
 async function updateBatchState(e) {
     e.preventDefault();
     
@@ -1438,37 +1669,32 @@ async function updateBatchState(e) {
     }
 }
 
-// Update Stats
+// Statistics
 async function updateStats() {
     try {
         if (!contract) return;
         
         const totalBatches = await contract.nextBatchId();
-        stats.totalBatches = Number(totalBatches);
-        stats.totalFarmers = registeredUsers.filter(u => u.roles.includes('FARMER')).length;
+        document.getElementById('totalBatches').textContent = Number(totalBatches);
+        document.getElementById('totalFarmers').textContent = registeredUsers.filter(u => u.roles.includes('FARMER')).length;
         
-        // Count delivered batches
         let deliveredCount = 0;
-        for (let i = 0; i < stats.totalBatches; i++) {
+        for (let i = 0; i < Number(totalBatches); i++) {
             try {
                 const batch = await contract.getBatch(i);
-                if (Number(batch.state) >= 4) { // Delivered or Sold
+                if (Number(batch.state) >= 4) {
                     deliveredCount++;
                 }
             } catch (e) {}
         }
-        stats.deliveredBatches = deliveredCount;
-        
-        document.getElementById('totalBatches').textContent = stats.totalBatches;
-        document.getElementById('totalFarmers').textContent = stats.totalFarmers;
-        document.getElementById('deliveredBatches').textContent = stats.deliveredBatches;
+        document.getElementById('deliveredBatches').textContent = deliveredCount;
         
     } catch (error) {
         console.error('Stats error:', error);
     }
 }
 
-// Calculate Total Payment
+// Utility Functions
 function calculateTotalPayment() {
     const amounts = document.querySelectorAll('.split-amount');
     let total = 0;
@@ -1478,7 +1704,6 @@ function calculateTotalPayment() {
     document.getElementById('totalPayment').textContent = total.toFixed(4) + ' ETH';
 }
 
-// Local Storage
 function saveToLocalStorage() {
     localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 }
@@ -1490,7 +1715,6 @@ function loadFromLocalStorage() {
     }
 }
 
-// Navigation
 function handleNavigation(e) {
     e.preventDefault();
     const target = document.querySelector(e.target.getAttribute('href'));
@@ -1501,19 +1725,6 @@ function handleNavigation(e) {
     }
 }
 
-// Check URL Parameters
-function checkURLParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const batchId = urlParams.get('batch');
-    if (batchId) {
-        document.getElementById('trackBatchId').value = batchId;
-        setTimeout(() => {
-            document.querySelector('#track').scrollIntoView({ behavior: 'smooth' });
-        }, 1000);
-    }
-}
-
-// Utility Functions
 function showLoading(show) {
     document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
 }
@@ -1543,4 +1754,4 @@ function showToast(message, type = 'info') {
     }, 5000);
 }
 
-console.log(' AgriChain Loaded - Contract:', CONFIG.CONTRACT_ADDRESS);
+console.log('🌾 AgriChain Enhanced - Loaded Successfully');
