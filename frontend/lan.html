@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Fair Price Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .card h2 {
+            color: #27ae60;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2ecc71;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-card {
+            display: none;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .price-display {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .price-range {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin: 15px 0;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-summary {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-summary h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .input-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: #10b981;
+        }
+
+        .status-dot.offline {
+            background: #ef4444;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        .loader {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .price-display {
+                font-size: 2.5em;
+            }
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 Crop Fair Price Predictor</h1>
+            <p>Get AI-powered fair price predictions for your crops</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting to server...</span>
+                </div>
+
+                <h2><span class="icon">📋</span> Enter Crop Details</h2>
+                
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label for="crop">Crop Type</label>
+                        <select id="crop" required>
+                            <option value="">Select crop...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="season">Season</label>
+                        <select id="season" required>
+                            <option value="">Select season...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="state">State</label>
+                        <select id="state" required>
+                            <option value="">Select state...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="area">Area (hectares)</label>
+                        <input type="number" id="area" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="production">Production (tonnes)</label>
+                        <input type="number" id="production" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rainfall">Annual Rainfall (mm)</label>
+                        <input type="number" id="rainfall" step="0.1" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fertilizer">Fertilizer (kg/hectare)</label>
+                        <input type="number" id="fertilizer" step="0.1" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pesticide">Pesticide (kg/hectare)</label>
+                        <input type="number" id="pesticide" step="0.1" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yield">Yield (kg/hectare)</label>
+                        <input type="number" id="yield" step="0.1" min="0" required>
+                    </div>
+
+                    <button type="submit" class="btn" id="predictBtn">
+                        🔮 Predict Fair Price
+                    </button>
+                </form>
+
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+
+            <div class="card result-card" id="resultCard">
+                <h2><span class="icon">💰</span> Fair Price Prediction</h2>
+                <div class="loader" id="loader"></div>
+                <div id="resultContent">
+                    <div class="price-display">₹<span id="fairPrice">--</span>/kg</div>
+                    <div class="price-range">
+                        Fair Range: ₹<span id="minPrice">--</span> - ₹<span id="maxPrice">--</span>/kg (<span id="percentRange">--</span>)
+                    </div>
+                    <div class="confidence-badge">
+                        <span id="confidence">95%</span> Confidence
+                    </div>
+                    
+                    <div class="input-summary">
+                        <h3>📊 Input Summary</h3>
+                        <div class="input-row">
+                            <span>Crop:</span>
+                            <strong id="sumCrop">-</strong>
+                        </div>
+                        <div class="input-row">
+                            <span>Season:</span>
+                            <strong id="sumSeason">-</strong>
+                        </div>
+                        <div class="input-row">
+                            <span>State:</span>
+                            <strong id="sumState">-</strong>
+                        </div>
+                        <div class="input-row">
+                            <span>Area:</span>
+                            <strong id="sumArea">-</strong>
+                        </div>
+                        <div class="input-row">
+                            <span>Production:</span>
+                            <strong id="sumProduction">-</strong>
+                        </div>
+                        <div class="input-row">
+                            <span>Yield:</span>
+                            <strong id="sumYield">-</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let isServerOnline = false;
+
+        // Check server health
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    isServerOnline = true;
+                    document.getElementById('statusDot').classList.add('online');
+                    document.getElementById('statusText').textContent = 'Server Online';
+                    loadOptions();
+                } else {
+                    throw new Error('Server not healthy');
+                }
+            } catch (error) {
+                isServerOnline = false;
+                document.getElementById('statusDot').classList.add('offline');
+                document.getElementById('statusText').textContent = 'Server Offline - Please start the Flask server';
+            }
+        }
+
+        // Load dropdown options
+        async function loadOptions() {
+            try {
+                const response = await fetch(`${API_URL}/options`);
+                const options = await response.json();
+
+                const cropSelect = document.getElementById('crop');
+                const seasonSelect = document.getElementById('season');
+                const stateSelect = document.getElementById('state');
+
+                options.Crop.forEach(crop => {
+                    const option = document.createElement('option');
+                    option.value = crop;
+                    option.textContent = crop;
+                    cropSelect.appendChild(option);
+                });
+
+                options.Season.forEach(season => {
+                    const option = document.createElement('option');
+                    option.value = season;
+                    option.textContent = season;
+                    seasonSelect.appendChild(option);
+                });
+
+                options.State.forEach(state => {
+                    const option = document.createElement('option');
+                    option.value = state;
+                    option.textContent = state;
+                    stateSelect.appendChild(option);
+                });
+            } catch (error) {
+                showError('Failed to load options. Please refresh the page.');
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        // Handle form submission
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!isServerOnline) {
+                showError('Server is offline. Please start the Flask server first.');
+                return;
+            }
+
+            const resultCard = document.getElementById('resultCard');
+            const loader = document.getElementById('loader');
+            const resultContent = document.getElementById('resultContent');
+            const predictBtn = document.getElementById('predictBtn');
+
+            // Show loading state
+            resultCard.classList.add('show');
+            loader.classList.add('show');
+            resultContent.style.display = 'none';
+            predictBtn.disabled = true;
+
+            const formData = {
+                Crop: document.getElementById('crop').value,
+                Season: document.getElementById('season').value,
+                State: document.getElementById('state').value,
+                Area: parseFloat(document.getElementById('area').value),
+                Production: parseFloat(document.getElementById('production').value),
+                Annual_Rainfall: parseFloat(document.getElementById('rainfall').value),
+                Fertilizer: parseFloat(document.getElementById('fertilizer').value),
+                Pesticide: parseFloat(document.getElementById('pesticide').value),
+                Yield: parseFloat(document.getElementById('yield').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Calculate percentage range
+                    const fairPrice = data.Fair_Pay;
+                    const minPrice = data.Fair_Range[0];
+                    const maxPrice = data.Fair_Range[1];
+                    const percentageRange = (((maxPrice - minPrice) / 2) / fairPrice * 100).toFixed(2);
+                    
+                    // Update results
+                    document.getElementById('fairPrice').textContent = data.Fair_Pay.toFixed(2);
+                    document.getElementById('minPrice').textContent = minPrice.toFixed(2);
+                    document.getElementById('maxPrice').textContent = maxPrice.toFixed(2);
+                    document.getElementById('percentRange').textContent = `±${percentageRange}%`;
+                    document.getElementById('confidence').textContent = data.confidence_level;
+
+                    // Update summary
+                    document.getElementById('sumCrop').textContent = data.input_data.Crop;
+                    document.getElementById('sumSeason').textContent = data.input_data.Season;
+                    document.getElementById('sumState').textContent = data.input_data.State;
+                    document.getElementById('sumArea').textContent = data.input_data.Area + ' ha';
+                    document.getElementById('sumProduction').textContent = data.input_data.Production + ' t';
+                    document.getElementById('sumYield').textContent = data.input_data.Yield + ' kg/ha';
+
+                    // Show results
+                    loader.classList.remove('show');
+                    resultContent.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+            } catch (error) {
+                resultCard.classList.remove('show');
+                showError(error.message || 'Failed to get prediction. Please try again.');
+            } finally {
+                predictBtn.disabled = false;
+            }
+        });
+
+        // Initialize
+        checkHealth();
+    </script>
+</body>
+</html>s
