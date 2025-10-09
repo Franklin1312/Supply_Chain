@@ -3,31 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/jpg" href='favicon.png.jpg'> 
     <title>Agricultural Supply Chain - Blockchain Transparency</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Header -->
+   <body>
+    <!-- Header -->
     <header>
         <nav class="navbar">
             <div class="container">
                 <div class="nav-brand">
                     <i class="fas fa-seedling"></i>
-                    <span>AgriChain</span>
+                    <span data-translate="app_name">AgriChain</span>
                 </div>
                 <div class="nav-menu">
-                    <a href="#home" class="nav-link active">Home</a>
-                    <a href="#admin" class="nav-link" id="adminLink" style="display: none;">Admin</a>
-                    <a href="#create" class="nav-link" id="createLink" style="display: none;">Create Batch</a>
-                    <a href="#track" class="nav-link">Track Product</a>
-                    <a href="#purchase" class="nav-link" id="purchaseLink" style="display: none;">Purchase</a>
-                    <a href="#updateState" class="nav-link" id="updateLink" style="display: none;">Update State</a>
+                    <a href="#home" class="nav-link active" data-translate="nav_home">Home</a>
+                    <a href="#admin" class="nav-link" id="adminLink" style="display: none;" data-translate="nav_admin">Admin</a>
+                    <a href="#create" class="nav-link" id="createLink" style="display: none;" data-translate="nav_create">Create Batch</a>
+                    <a href="#track" class="nav-link" data-translate="nav_track">Track Product</a>
+                    <a href="#purchase" class="nav-link" id="purchaseLink" style="display: none;" data-translate="nav_purchase">Purchase</a>
+                    <a href="#updateState" class="nav-link" id="updateLink" style="display: none;" data-translate="nav_update">Update State</a>
                 </div>
-                <button id="connectWallet" class="btn btn-primary">
-                    <i class="fas fa-wallet"></i> Connect Wallet
-                </button>
+                <div class="nav-actions">
+                    <div class="language-selector">
+                        <button class="language-btn" id="languageBtn">
+                            <i class="fas fa-language"></i>
+                            <span id="currentLang">EN</span>
+                        </button>
+                        <div class="language-dropdown" id="languageDropdown">
+                            <div class="language-option active" data-lang="en" data-code="en">English</div>
+                            <div class="language-option" data-lang="hi" data-code="hi">हिंदी (Hindi)</div>
+                            <div class="language-option" data-lang="ta" data-code="ta">தமிழ் (Tamil)</div>
+                            <div class="language-option" data-lang="te" data-code="te">తెలుగు (Telugu)</div>
+                            <div class="language-option" data-lang="bn" data-code="bn">বাংলা (Bengali)</div>
+                            <div class="language-option" data-lang="mr" data-code="mr">मराठी (Marathi)</div>
+                            <div class="language-option" data-lang="gu" data-code="gu">ગુજરાતી (Gujarati)</div>
+                            <div class="language-option" data-lang="kn" data-code="kn">ಕನ್ನಡ (Kannada)</div>
+                            <div class="language-option" data-lang="ml" data-code="ml">മലയാളം (Malayalam)</div>
+                            <div class="language-option" data-lang="pa" data-code="pa">ਪੰਜਾਬੀ (Punjabi)</div>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="connectWallet" class="btn btn-primary">
+                        <i class="fas fa-wallet"></i> <span data-translate="connect_wallet">Connect Wallet</span>
+                    </button>
+                </div>
             </div>
         </nav>
     </header>
@@ -36,23 +60,23 @@
     <section id="home" class="hero">
         <div class="container">
             <div class="hero-content">
-                <h1>Transparent Agricultural Supply Chain</h1>
-                <p>Empowering farmers with fair prices and consumers with trust through blockchain technology</p>
+                <h1 data-translate="hero_title">Agricultural Supply Chain</h1>
+                <p data-translate="hero_subtitle">Empowering farmers with fair prices and consumers with trust through blockchain technology</p>
                 <div class="hero-stats">
                     <div class="stat-card">
                         <i class="fas fa-box"></i>
                         <h3 id="totalBatches">0</h3>
-                        <p>Total Batches</p>
+                        <p data-translate="stat_batches">Total Batches</p>
                     </div>
                     <div class="stat-card">
                         <i class="fas fa-users"></i>
                         <h3 id="totalFarmers">0</h3>
-                        <p>Registered Farmers</p>
+                        <p data-translate="stat_farmers">Registered Farmers</p>
                     </div>
                     <div class="stat-card">
                         <i class="fas fa-check-circle"></i>
                         <h3 id="deliveredBatches">0</h3>
-                        <p>Delivered</p>
+                        <p data-translate="stat_delivered">Delivered</p>
                     </div>
                 </div>
             </div>
@@ -63,14 +87,14 @@
     <div class="wallet-status" id="walletStatus" style="display: none;">
         <div class="container">
             <div class="status-info">
-                <span class="status-label">Connected:</span>
+                <span class="status-label" data-translate="status_connected">Connected:</span>
                 <span id="connectedAddress" class="status-value">Not Connected</span>
-                <span class="status-label">Active Role:</span>
+                <span class="status-label" data-translate="status_role">Active Role:</span>
                 <span id="activeRole" class="status-value">None</span>
                 <button id="switchRoleBtn" class="btn-small" style="display: none;">
-                    <i class="fas fa-exchange-alt"></i> Switch Role
+                    <i class="fas fa-exchange-alt"></i> <span data-translate="switch_role">Switch Role</span>
                 </button>
-                <span class="status-label">Network:</span>
+                <span class="status-label" data-translate="status_network">Network:</span>
                 <span id="networkName" class="status-value">Unknown</span>
             </div>
         </div>
@@ -80,73 +104,71 @@
     <section id="admin" class="section" style="display: none;">
         <div class="container">
             <h2 class="section-title">
-                <i class="fas fa-user-shield"></i> Admin Panel
+                <i class="fas fa-user-shield"></i> <span data-translate="admin_panel">Admin Panel</span>
             </h2>
             
-            <!-- Register User -->
             <div class="card">
-                <h3><i class="fas fa-user-plus"></i> Register New User</h3>
+                <h3><i class="fas fa-user-plus"></i> <span data-translate="register_user">Register New User</span></h3>
                 <form id="registerUserForm">
                     <div class="form-group">
                         <label for="userAddress">
-                            <i class="fas fa-wallet"></i> User Wallet Address
+                            <i class="fas fa-wallet"></i> <span data-translate="user_address">User Wallet Address</span>
                         </label>
                         <input type="text" id="userAddress" placeholder="0x..." required>
                     </div>
                     
                     <div class="form-group">
                         <label for="userName">
-                            <i class="fas fa-user"></i> User Name (Optional)
+                            <i class="fas fa-user"></i> <span data-translate="user_name">User Name (Optional)</span>
                         </label>
                         <input type="text" id="userName" placeholder="John Doe">
                     </div>
                     
                     <div class="form-group">
-                        <label><i class="fas fa-clipboard-check"></i> Select Roles</label>
+                        <label><i class="fas fa-clipboard-check"></i> <span data-translate="select_roles">Select Roles</span></label>
                         <div class="checkbox-group">
                             <label class="checkbox-label">
-                                <input type="checkbox" name="role" value="FARMER"> Farmer
+                                <input type="checkbox" name="role" value="FARMER"> <span data-translate="role_farmer">Farmer</span>
                             </label>
                             <label class="checkbox-label">
-                                <input type="checkbox" name="role" value="TRANSPORT"> Transporter
+                                <input type="checkbox" name="role" value="TRANSPORT"> <span data-translate="role_transport">Transporter</span>
                             </label>
                             <label class="checkbox-label">
-                                <input type="checkbox" name="role" value="MIDDLEMAN"> Middleman
+                                <input type="checkbox" name="role" value="MIDDLEMAN"> <span data-translate="role_middleman">Middleman</span>
                             </label>
                             <label class="checkbox-label">
-                                <input type="checkbox" name="role" value="RETAILER"> Retailer
+                                <input type="checkbox" name="role" value="RETAILER"> <span data-translate="role_retailer">Retailer</span>
                             </label>
                         </div>
                     </div>
                     
                     <button type="submit" class="btn btn-success btn-block">
-                        <i class="fas fa-user-check"></i> Register User
+                        <i class="fas fa-user-check"></i> <span data-translate="btn_register">Register User</span>
                     </button>
                 </form>
             </div>
 
-            <!-- Registered Users List -->
             <div class="card" style="margin-top: 2rem;">
-                <h3><i class="fas fa-users"></i> Registered Users</h3>
+                <h3><i class="fas fa-users"></i> <span data-translate="registered_users">Registered Users</span></h3>
                 <button id="loadUsersBtn" class="btn btn-primary" onclick="loadRegisteredUsers()">
-                    <i class="fas fa-sync"></i> Load Users
+                    <i class="fas fa-sync"></i> <span data-translate="btn_load_users">Load Users</span>
                 </button>
                 <div id="usersList" class="users-list"></div>
             </div>
         </div>
     </section>
 
-    <!-- Create Batch Section (Farmer) -->
+    <!-- Create Batch Section -->
     <section id="create" class="section" style="display: none;">
         <div class="container">
             <h2 class="section-title">
-                <i class="fas fa-plus-circle"></i> Create New Batch
+                <i class="fas fa-plus-circle"></i> <span data-translate="create_batch">Create New Batch</span>
             </h2>
             <div class="card">
                 <form id="createBatchForm">
                     <div class="form-group">
                         <label for="productName">
-                            <i class="fas fa-apple-alt"></i> Product Name
+                            <i class="fas fa-apple-alt"></i> <span data-translate="product_name">Product Name</span>
                         </label>
                         <input type="text" id="productName" placeholder="e.g., Organic Tomatoes" required>
                     </div>
@@ -154,13 +176,13 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="quantity">
-                                <i class="fas fa-weight"></i> Quantity (kg)
+                                <i class="fas fa-weight"></i> <span data-translate="quantity">Quantity (kg)</span>
                             </label>
                             <input type="number" id="quantity" placeholder="100" required>
                         </div>
                         <div class="form-group">
                             <label for="farmerPrice">
-                                <i class="fas fa-dollar-sign"></i> Price (ETH)
+                                <i class="fas fa-dollar-sign"></i> <span data-translate="price">Price (ETH)</span>
                             </label>
                             <input type="number" id="farmerPrice" step="0.001" placeholder="0.1" required>
                         </div>
@@ -168,29 +190,37 @@
 
                     <div class="form-group">
                         <label for="origin">
-                            <i class="fas fa-map-marker-alt"></i> Origin Location
+                            <i class="fas fa-map-marker-alt"></i> <span data-translate="origin">Origin Location</span>
                         </label>
                         <input type="text" id="origin" placeholder="Farm location" required>
                     </div>
 
                     <div class="form-group">
                         <label for="certifications">
-                            <i class="fas fa-certificate"></i> Certifications
+                            <i class="fas fa-certificate"></i> <span data-translate="certifications">Certifications</span>
                         </label>
                         <input type="text" id="certifications" placeholder="Organic, Fair Trade, etc.">
                     </div>
 
                     <div class="form-group">
                         <label for="description">
-                            <i class="fas fa-file-alt"></i> Description
+                            <i class="fas fa-file-alt"></i> <span data-translate="description">Description</span>
                         </label>
                         <textarea id="description" rows="3" placeholder="Product details..."></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-success btn-block">
-                        <i class="fas fa-check"></i> Create Batch
+                        <i class="fas fa-check"></i> <span data-translate="btn_create">Create Batch</span>
                     </button>
                 </form>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h3><i class="fas fa-history"></i> <span data-translate="my_batches">My Created Batches</span></h3>
+                <button class="btn btn-primary" onclick="loadMyBatches()">
+                    <i class="fas fa-sync"></i> <span data-translate="btn_load">Load My Batches</span>
+                </button>
+                <div id="myBatchesList" class="batches-list"></div>
             </div>
         </div>
     </section>
@@ -199,70 +229,17 @@
     <section id="track" class="section bg-light">
         <div class="container">
             <h2 class="section-title">
-                <i class="fas fa-search"></i> Track Product Journey
+                <i class="fas fa-search"></i> <span data-translate="track_product">Track Product Journey</span>
             </h2>
             <div class="card">
                 <div class="search-box">
                     <input type="number" id="trackBatchId" placeholder="Enter Batch ID">
                     <button id="trackBtn" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Track
+                        <i class="fas fa-search"></i> <span data-translate="btn_track">Track</span>
                     </button>
                 </div>
-
-                <!-- Batch Details -->
-                <div id="batchDetails" class="batch-details" style="display: none;">
-                    <div class="batch-header">
-                        <h3 id="batchProductName"></h3>
-                        <span id="batchState" class="badge"></span>
-                    </div>
-
-                    <div class="batch-info-grid">
-                        <div class="info-item">
-                            <label>Batch ID</label>
-                            <span id="detailBatchId"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Farmer</label>
-                            <span id="detailFarmer"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Current Owner</label>
-                            <span id="detailOwner"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Quantity</label>
-                            <span id="detailQuantity"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Farmer Price</label>
-                            <span id="detailPrice"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Created At</label>
-                            <span id="detailCreated"></span>
-                        </div>
-                    </div>
-
-                    <!-- QR Code -->
-                    <div class="qr-section">
-                        <h4>Share this product</h4>
-                        <div id="qrCode"></div>
-                        <button id="downloadQR" class="btn btn-secondary">
-                            <i class="fas fa-download"></i> Download QR Code
-                        </button>
-                    </div>
-
-                    <!-- Journey Timeline -->
-                    <div class="timeline-section">
-                        <h4>Product Journey</h4>
-                        <div id="journeyTimeline" class="timeline"></div>
-                    </div>
-
-                    <!-- Participants -->
-                    <div class="participants-section">
-                        <h4>Supply Chain Participants</h4>
-                        <div id="participantsList" class="participants-list"></div>
-                    </div>
+                <div id="batchDetails" style="display: none;">
+                    <p data-translate="batch_info">Batch information will appear here...</p>
                 </div>
             </div>
         </div>
@@ -272,67 +249,78 @@
     <section id="purchase" class="section" style="display: none;">
         <div class="container">
             <h2 class="section-title">
-                <i class="fas fa-shopping-cart"></i> Purchase Batch
+                <i class="fas fa-shopping-cart"></i> <span data-translate="purchase_batch">Purchase Batch</span>
             </h2>
             <div class="card">
                 <form id="purchaseForm">
                     <div class="form-group">
                         <label for="purchaseBatchId">
-                            <i class="fas fa-hashtag"></i> Batch ID
+                            <i class="fas fa-hashtag"></i> <span data-translate="batch_id">Batch ID</span>
                         </label>
                         <input type="number" id="purchaseBatchId" placeholder="Enter Batch ID" required>
                     </div>
 
                     <div id="paymentSplits">
-                        <h4>Payment Distribution</h4>
-                        <div class="payment-split-item">
-                            <label>Farmer Payment (ETH)</label>
-                            <input type="number" step="0.001" class="split-amount" data-role="farmer" required>
-                            <input type="text" class="split-address" placeholder="Farmer Address" required>
+                        <h4 data-translate="payment_distribution">Payment Distribution</h4>
+                        
+                        <div class="payment-split-item" id="farmerPaymentSplit">
+                            <label data-translate="farmer_payment">Farmer Payment (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="farmer" id="farmerAmount">
+                            <input type="text" class="split-address" placeholder="Farmer Address" id="farmerAddress">
                         </div>
-                        <div class="payment-split-item">
-                            <label>Transporter Fee (ETH)</label>
-                            <input type="number" step="0.001" class="split-amount" data-role="transporter">
-                            <input type="text" class="split-address" placeholder="Transporter Address">
+                        
+                        <div class="payment-split-item" id="transporterPaymentSplit">
+                            <label data-translate="transporter_fee">Transporter Fee (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="transporter" id="transporterAmount">
+                            <input type="text" class="split-address" placeholder="Transporter Address" id="transporterAddress">
                         </div>
-                        <div class="payment-split-item">
-                            <label>Middleman Commission (ETH)</label>
-                            <input type="number" step="0.001" class="split-amount" data-role="middleman">
-                            <input type="text" class="split-address" placeholder="Middleman Address">
+                        
+                        <div class="payment-split-item" id="middlemanPaymentSplit">
+                            <label data-translate="middleman_commission">Middleman Commission (ETH)</label>
+                            <input type="number" step="0.001" class="split-amount" data-role="middleman" id="middlemanAmount">
+                            <input type="text" class="split-address" placeholder="Middleman Address" id="middlemanAddress">
                         </div>
                     </div>
 
                     <div class="total-payment">
-                        <label>Total Payment:</label>
+                        <label data-translate="total_payment">Total Payment:</label>
                         <span id="totalPayment">0 ETH</span>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-block">
-                        <i class="fas fa-shopping-cart"></i> Purchase Batch
+                        <i class="fas fa-shopping-cart"></i> <span data-translate="btn_purchase">Purchase Batch</span>
                     </button>
                 </form>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h3><i class="fas fa-history"></i> <span data-translate="purchase_history">My Purchase History</span></h3>
+                <button class="btn btn-primary" onclick="loadMyPurchases()">
+                    <i class="fas fa-sync"></i> <span data-translate="btn_load_purchases">Load Purchase History</span>
+                </button>
+                <div id="myPurchasesList" class="batches-list"></div>
             </div>
         </div>
     </section>
 
-    <!-- Update State Section (Transporter) -->
+    <!-- Update State Section -->
     <section id="updateState" class="section bg-light" style="display: none;">
         <div class="container">
             <h2 class="section-title">
-                <i class="fas fa-truck"></i> Update Batch State
+                <i class="fas fa-truck"></i> <span data-translate="update_state">Update Batch State</span>
             </h2>
             <div class="card">
                 <form id="updateStateForm">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="stateBatchId">
-                                <i class="fas fa-hashtag"></i> Batch ID
+                                <i class="fas fa-hashtag"></i> <span data-translate="batch_id">Batch ID</span>
                             </label>
                             <input type="number" id="stateBatchId" required>
                         </div>
                         <div class="form-group">
                             <label for="newState">
-                                <i class="fas fa-exchange-alt"></i> New State
+                                <i class="fas fa-exchange-alt"></i> <span data-translate="new_state">New State</span>
                             </label>
                             <select id="newState" required>
                                 <option value="">Select State</option>
@@ -345,7 +333,7 @@
                         </div>
                     </div>
                     <button type="submit" class="btn btn-warning btn-block">
-                        <i class="fas fa-sync"></i> Update State
+                        <i class="fas fa-sync"></i> <span data-translate="btn_update">Update State</span>
                     </button>
                 </form>
             </div>
@@ -356,37 +344,27 @@
     <div id="roleSwitcherModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-exchange-alt"></i> Switch Role</h3>
+                <h3><i class="fas fa-exchange-alt"></i> <span data-translate="switch_role">Switch Role</span></h3>
                 <span class="close-modal" onclick="closeRoleSwitcher()">&times;</span>
             </div>
             <div class="modal-body">
-                <p>Select your active role:</p>
+                <p data-translate="select_active_role">Select your active role:</p>
                 <div id="rolesList" class="roles-list"></div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
+    <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="spinner"></div>
-        <p>Processing transaction...</p>
+        <p data-translate="processing">Processing transaction...</p>
     </div>
 
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 AgriChain - Transparent Supply Chain Platform</p>
-            <p>Powered by Blockchain Technology</p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.4.0/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="script.js"></script>
-    <script src="qr.js"></script>
 </body>
 </html>
