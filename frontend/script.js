@@ -872,6 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // QR Scanner State
 let qrStream = null;
 let qrScannerActive = false;
+
 /**
  * Handle detected QR code data - Auto download batch info
  * @param {string} qrData - Detected QR code data
@@ -898,16 +899,16 @@ async function handleQRCodeDetected(qrData) {
         }
         
         if (batchId !== null) {
-            showToast('✅ QR Code detected! Downloading batch information...', 'success');
+            showToast('✅ QR Code detected! Fetching batch #' + batchId + '...', 'success');
             
             // Small delay to show the toast message
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Automatically download batch info
-            await window.downloadBatchInfo(batchId);
+            // Automatically download batch info as TXT
+            await downloadBatchInfo(batchId);
         } else {
-            showToast('⚠️ Invalid QR code format', 'warning');
-            console.error('QR data:', qrData);
+            showToast('⚠️ Invalid QR code - No batch ID found', 'warning');
+            console.error('QR data received:', qrData);
         }
     } catch (error) {
         console.error('QR handling error:', error);
@@ -916,32 +917,9 @@ async function handleQRCodeDetected(qrData) {
 }
 
 /**
- * Stop QR Scanner
+ * Download Batch Info as TXT file
  */
-function stopQRScanner() {
-    qrScannerActive = false;
-    
-    if (qrStream) {
-        qrStream.getTracks().forEach(track => track.stop());
-        qrStream = null;
-    }
-    
-    const video = document.getElementById('qrVideo');
-    const scannerContainer = document.getElementById('qrScannerContainer');
-    
-    if (video) {
-        video.srcObject = null;
-    }
-    
-    if (scannerContainer) {
-        scannerContainer.style.display = 'none';
-    }
-}
-
-/**
- * Modified downloadBatchInfo function with better error handling
- */
-window.downloadBatchInfo = async function(batchId) {
+async function downloadBatchInfo(batchId) {
     if (!contract) {
         showToast('Please connect wallet first', 'warning');
         return;
@@ -949,6 +927,8 @@ window.downloadBatchInfo = async function(batchId) {
     
     try {
         showLoading(true);
+        
+        console.log('📦 Fetching batch #' + batchId + ' from blockchain...');
         
         // Fetch batch information from blockchain
         const batch = await contract.getBatch(batchId);
@@ -1005,8 +985,7 @@ window.downloadBatchInfo = async function(batchId) {
         
         textContent += `========================================\n`;
         textContent += `Generated: ${new Date().toLocaleString()}\n`;
-        textContent += `Verified on ${CONFIG.NETWORK_NAME} Network\n`;
-        textContent += `Contract: ${CONFIG.CONTRACT_ADDRESS}\n`;
+        textContent += `Verified on Blockchain Network\n`;
         textContent += `========================================\n\n`;
         
         textContent += `AUTHENTICITY VERIFICATION:\n`;
@@ -1019,7 +998,7 @@ window.downloadBatchInfo = async function(batchId) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `AgriChain-Batch-${batchId}-${Date.now()}.txt`;
+        link.download = `Batch-${batchId}-Details-${Date.now()}.txt`;
         
         // Trigger download
         document.body.appendChild(link);
@@ -1031,21 +1010,48 @@ window.downloadBatchInfo = async function(batchId) {
             URL.revokeObjectURL(url);
         }, 100);
         
-        showToast('✅ Batch information downloaded successfully!', 'success');
+        showToast('✅ Batch #' + batchId + ' details downloaded!', 'success');
+        console.log('✅ Download complete');
         
     } catch (error) {
         console.error('Download error:', error);
         
         // Better error messages
         if (error.message.includes('Batch not found') || error.message.includes('does not exist')) {
-            showToast('❌ Batch ID ' + batchId + ' not found', 'error');
+            showToast('❌ Batch #' + batchId + ' not found on blockchain', 'error');
         } else {
             showToast('❌ Failed to download: ' + error.message, 'error');
         }
     } finally {
         showLoading(false);
     }
-};
+}
+
+// Make downloadBatchInfo available globally
+window.downloadBatchInfo = downloadBatchInfo;
+/**
+ * Stop QR Scanner
+ */
+function stopQRScanner() {
+    qrScannerActive = false;
+    
+    if (qrStream) {
+        qrStream.getTracks().forEach(track => track.stop());
+        qrStream = null;
+    }
+    
+    const video = document.getElementById('qrVideo');
+    const scannerContainer = document.getElementById('qrScannerContainer');
+    
+    if (video) {
+        video.srcObject = null;
+    }
+    
+    if (scannerContainer) {
+        scannerContainer.style.display = 'none';
+    }
+}
+
 
 /**
  * Start QR Code Scanner with improved feedback
