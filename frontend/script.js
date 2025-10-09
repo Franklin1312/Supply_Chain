@@ -872,10 +872,74 @@ document.addEventListener('DOMContentLoaded', () => {
 // QR Scanner State
 let qrStream = null;
 let qrScannerActive = false;
+/**
+ * Handle detected QR code data - Auto download batch info
+ * @param {string} qrData - Detected QR code data
+ */
+async function handleQRCodeDetected(qrData) {
+    stopQRScanner();
+    
+    try {
+        let batchId = null;
+        
+        // Try to parse as JSON first
+        try {
+            const parsedData = JSON.parse(qrData);
+            
+            if (parsedData.batchId) {
+                batchId = parsedData.batchId;
+            }
+        } catch (jsonError) {
+            // If not JSON, treat as plain batch ID
+            const trimmedData = qrData.trim();
+            if (!isNaN(trimmedData) && trimmedData !== '') {
+                batchId = trimmedData;
+            }
+        }
+        
+        if (batchId !== null) {
+            showToast('✅ QR Code detected! Downloading batch information...', 'success');
+            
+            // Small delay to show the toast message
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Automatically download batch info
+            await window.downloadBatchInfo(batchId);
+        } else {
+            showToast('⚠️ Invalid QR code format', 'warning');
+            console.error('QR data:', qrData);
+        }
+    } catch (error) {
+        console.error('QR handling error:', error);
+        showToast('❌ Failed to process QR code: ' + error.message, 'error');
+    }
+}
 
 /**
- * Download batch information as .txt file
- * @param {string|number} batchId - Batch ID to download
+ * Stop QR Scanner
+ */
+function stopQRScanner() {
+    qrScannerActive = false;
+    
+    if (qrStream) {
+        qrStream.getTracks().forEach(track => track.stop());
+        qrStream = null;
+    }
+    
+    const video = document.getElementById('qrVideo');
+    const scannerContainer = document.getElementById('qrScannerContainer');
+    
+    if (video) {
+        video.srcObject = null;
+    }
+    
+    if (scannerContainer) {
+        scannerContainer.style.display = 'none';
+    }
+}
+
+/**
+ * Modified downloadBatchInfo function with better error handling
  */
 window.downloadBatchInfo = async function(batchId) {
     if (!contract) {
@@ -955,30 +1019,47 @@ window.downloadBatchInfo = async function(batchId) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `batch-${batchId}-info.txt`;
+        link.download = `AgriChain-Batch-${batchId}-${Date.now()}.txt`;
+        
+        // Trigger download
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
         
         showToast('✅ Batch information downloaded successfully!', 'success');
         
     } catch (error) {
         console.error('Download error:', error);
-        showToast('Failed to download batch information: ' + error.message, 'error');
+        
+        // Better error messages
+        if (error.message.includes('Batch not found') || error.message.includes('does not exist')) {
+            showToast('❌ Batch ID ' + batchId + ' not found', 'error');
+        } else {
+            showToast('❌ Failed to download: ' + error.message, 'error');
+        }
     } finally {
         showLoading(false);
     }
 };
 
 /**
- * Start QR Code Scanner
+ * Start QR Code Scanner with improved feedback
  */
 async function scanQRCode() {
     const scannerContainer = document.getElementById('qrScannerContainer');
     const video = document.getElementById('qrVideo');
     
     try {
+        if (!contract) {
+            showToast('⚠️ Please connect your wallet first', 'warning');
+            return;
+        }
+        
         // Request camera access
         qrStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }
@@ -989,7 +1070,7 @@ async function scanQRCode() {
         scannerContainer.style.display = 'block';
         qrScannerActive = true;
         
-        showToast('📷 QR Scanner started. Point camera at QR code', 'info');
+        showToast('📷 QR Scanner started. Point at QR code', 'info');
         
         // Start scanning
         requestAnimationFrame(scanFrame);
@@ -998,11 +1079,11 @@ async function scanQRCode() {
         console.error('Camera access error:', error);
         
         if (error.name === 'NotAllowedError') {
-            showToast('Camera permission denied. Please allow camera access.', 'error');
+            showToast('❌ Camera permission denied. Please allow camera access.', 'error');
         } else if (error.name === 'NotFoundError') {
-            showToast('No camera found on this device', 'error');
+            showToast('❌ No camera found on this device', 'error');
         } else {
-            showToast('Failed to access camera: ' + error.message, 'error');
+            showToast('❌ Failed to access camera: ' + error.message, 'error');
         }
     }
 }
@@ -1026,117 +1107,14 @@ function scanFrame() {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (code) {
+            // QR code detected - process it
             handleQRCodeDetected(code.data);
             return; // Stop scanning after detection
         }
     }
     
+    // Continue scanning
     requestAnimationFrame(scanFrame);
-}
-
-/**
- * Handle detected QR code data
- * @param {string} qrData - Detected QR code data
- */
-async function handleQRCodeDetected(qrData) {
-    stopQRScanner();
-    
-    try {
-        // Try to parse as JSON first
-        const parsedData = JSON.parse(qrData);
-        
-        if (parsedData.action === 'download_batch' && parsedData.batchId) {
-            showToast('✅ QR Code detected! Downloading batch information...', 'success');
-            await window.downloadBatchInfo(parsedData.batchId);
-        } else {
-            showToast('⚠️ Invalid QR code format', 'warning');
-        }
-    } catch (error) {
-        // If not JSON, check if it's a simple batch ID number
-        const batchId = qrData.trim();
-        if (!isNaN(batchId) && batchId !== '') {
-            showToast('✅ QR Code detected! Downloading batch information...', 'success');
-            await window.downloadBatchInfo(batchId);
-        } else {
-            showToast('❌ Invalid QR code data', 'error');
-            console.error('QR data:', qrData);
-        }
-    }
-}
-
-/**
- * Stop QR Scanner
- */
-function stopQRScanner() {
-    qrScannerActive = false;
-    
-    if (qrStream) {
-        qrStream.getTracks().forEach(track => track.stop());
-        qrStream = null;
-    }
-    
-    const video = document.getElementById('qrVideo');
-    const scannerContainer = document.getElementById('qrScannerContainer');
-    
-    if (video) {
-        video.srcObject = null;
-    }
-    
-    if (scannerContainer) {
-        scannerContainer.style.display = 'none';
-    }
-    
-    showToast('🛑 QR Scanner stopped', 'info');
-}
-
-/**
- * Check for QR scan on page load (if coming from external QR scanner)
- */
-function checkForQRScan() {
-    // Check URL parameters for batch ID
-    const urlParams = new URLSearchParams(window.location.search);
-    const batchId = urlParams.get('batch');
-    
-    if (batchId) {
-        // Auto-download if batch ID is in URL
-        setTimeout(() => {
-            if (contract) {
-                window.downloadBatchInfo(batchId);
-            } else {
-                showToast('Please connect wallet to download batch information', 'warning');
-                document.getElementById('trackBatchId').value = batchId;
-            }
-        }, 1000);
-    }
-}
-
-/**
- * Manual download trigger (button click)
- */
-async function downloadBatchFromInput() {
-    const batchId = document.getElementById('trackBatchId').value;
-    
-    if (!batchId) {
-        showToast('Please enter a batch ID', 'warning');
-        return;
-    }
-    
-    await window.downloadBatchInfo(batchId);
-}
-
-// Add download button to track section (call this after page loads)
-function addDownloadButton() {
-    const trackBtn = document.getElementById('trackBtn');
-    
-    if (trackBtn && !document.getElementById('downloadBatchBtn')) {
-        const downloadBtn = document.createElement('button');
-        downloadBtn.id = 'downloadBatchBtn';
-        downloadBtn.className = 'btn btn-success';
-        downloadBtn.innerHTML = '<i class="fas fa-download"></i> <span>Download Info</span>';
-        downloadBtn.onclick = downloadBatchFromInput;
-        
-        trackBtn.parentNode.insertBefore(downloadBtn, trackBtn.nextSibling);
-    }
 }
 
 function initializeEventListeners() {
