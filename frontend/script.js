@@ -877,14 +877,6 @@ let qrScannerActive = false;
  * Handle detected QR code data - Auto download batch info
  * @param {string} qrData - Detected QR code data
  */
-// QR Scanner State
-let qrStream = null;
-let qrScannerActive = false;
-
-/**
- * Handle detected QR code data - Auto download batch info
- * @param {string} qrData - Detected QR code data
- */
 async function handleQRCodeDetected(qrData) {
     stopQRScanner();
     
