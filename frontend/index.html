@@ -227,23 +227,59 @@
 
     <!-- Track Product Section -->
     <section id="track" class="section bg-light">
-        <div class="container">
-            <h2 class="section-title">
-                <i class="fas fa-search"></i> <span data-translate="track_product">Track Product Journey</span>
-            </h2>
-            <div class="card">
-                <div class="search-box">
-                    <input type="number" id="trackBatchId" placeholder="Enter Batch ID">
-                    <button id="trackBtn" class="btn btn-primary">
-                        <i class="fas fa-search"></i> <span data-translate="btn_track">Track</span>
+    <div class="container">
+        <h2 class="section-title">
+            <i class="fas fa-search"></i> <span data-translate="track_product">Track Product Journey</span>
+        </h2>
+        <div class="card">
+            <div class="search-box" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <input type="number" id="trackBatchId" placeholder="Enter Batch ID" style="flex: 1; min-width: 200px;">
+                <button id="trackBtn" class="btn btn-primary">
+                    <i class="fas fa-search"></i> <span data-translate="btn_track">Track</span>
+                </button>
+                <button id="downloadBatchBtn" class="btn btn-success" onclick="downloadBatchFromInput()">
+                    <i class="fas fa-download"></i> <span>Download Info</span>
+                </button>
+                <button id="scanQRBtn" class="btn btn-warning" onclick="scanQRCode()">
+                    <i class="fas fa-qrcode"></i> <span>Scan QR</span>
+                </button>
+            </div>
+            
+            <!-- QR Scanner Container -->
+            <div id="qrScannerContainer" style="display: none; margin-top: 1.5rem; text-align: center;">
+                <div style="background: #000; border-radius: 12px; padding: 1rem; display: inline-block;">
+                    <video id="qrVideo" autoplay style="width: 100%; max-width: 500px; border-radius: 8px;"></video>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <p style="color: var(--gray); margin-bottom: 0.5rem;">
+                        <i class="fas fa-info-circle"></i> Point your camera at the QR code
+                    </p>
+                    <button class="btn btn-secondary" onclick="stopQRScanner()">
+                        <i class="fas fa-times"></i> Stop Scanner
                     </button>
                 </div>
-                <div id="batchDetails" style="display: none;">
-                    <p data-translate="batch_info">Batch information will appear here...</p>
-                </div>
+            </div>
+            
+            <!-- Batch Details Display -->
+            <div id="batchDetails" style="display: none; margin-top: 2rem;">
+                <p data-translate="batch_info">Batch information will appear here...</p>
+            </div>
+            
+            <!-- Info Box -->
+            <div style="margin-top: 2rem; padding: 1rem; background: var(--light-color); border-radius: 8px; border-left: 4px solid var(--success-color);">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-dark);">
+                    <i class="fas fa-lightbulb"></i> How it works
+                </h4>
+                <ul style="margin: 0; padding-left: 1.5rem; color: var(--gray);">
+                    <li>Enter a Batch ID and click "Track" to view details on screen</li>
+                    <li>Click "Download Info" to save batch information as a .txt file</li>
+                    <li>Click "Scan QR" to use your camera to scan a product QR code</li>
+                    <li>When you scan a QR code, batch information will automatically download</li>
+                </ul>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Purchase Batch Section -->
     <section id="purchase" class="section" style="display: none;">
