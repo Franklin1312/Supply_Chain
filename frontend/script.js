@@ -849,13 +849,23 @@ let provider, signer, contract, userAddress;
 let userRoles = [], activeRole = null;
 let registeredUsers = [];
 let stats = { totalBatches: 0, totalFarmers: 0, deliveredBatches: 0 };
-
+let qrGenerator;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     loadFromLocalStorage();
     initializeTheme();
     initializeLanguage();
+    qrGenerator = new QRCodeGenerator({
+        width: 300,
+        height: 300,
+        colorDark: "#2ecc71"
+    });
+    
+    // Load registered users on page load
+    if (registeredUsers.length > 0) {
+        loadRegisteredUsers();
+    }
 });
 
 function initializeEventListeners() {
@@ -1556,6 +1566,27 @@ async function trackBatch() {
                 </div>
             </div>
         `;
+        const qrContainer = document.createElement('div');
+        qrContainer.id = 'batchQRCode';
+        qrContainer.style.cssText = 'text-align: center; margin: 2rem 0; padding: 1rem; background: white; border-radius: 8px;';
+        
+        batchDetails.appendChild(qrContainer);
+        
+        // Initialize QR Generator
+        const qrGen = new QRCodeGenerator({
+            width: 300,
+            height: 300,
+            colorDark: "#2ecc71"
+        });
+        
+        await qrGen.generateBatchQR(batchId, qrContainer);
+        
+        // Add download button
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn btn-primary';
+        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download QR Code';
+        downloadBtn.onclick = () => qrGen.downloadQRCode(qrContainer, `batch-${batchId}-qr.png`);
+        batchDetails.appendChild(downloadBtn);
         
         batchDetails.style.display = 'block';
         showToast('Batch loaded successfully!', 'success');
