@@ -877,156 +877,153 @@ let qrScannerActive = false;
  * Handle detected QR code data - Auto download batch info
  * @param {string} qrData - Detected QR code data
  */
+/**
+ * Handle detected QR code data - MUST fetch from blockchain
+ */
 async function handleQRCodeDetected(qrData) {
     stopQRScanner();
     
+    console.log('🔍 RAW QR Data:', qrData);
+    
     try {
-        console.log('🔍 QR Data received:', qrData);
-        
         let batchId = null;
         
-        // Try to parse as JSON first
+        // Parse JSON data
         try {
-            const parsedData = JSON.parse(qrData);
-            console.log('📦 Parsed JSON:', parsedData);
-            
-            if (parsedData.batchId) {
-                batchId = parsedData.batchId;
-            }
-        } catch (jsonError) {
-            // If not JSON, treat as plain batch ID
-            console.log('⚠️ Not JSON, treating as plain text');
-            const trimmedData = qrData.trim();
-            if (!isNaN(trimmedData) && trimmedData !== '') {
-                batchId = trimmedData;
-            }
+            const parsed = JSON.parse(qrData);
+            console.log('📦 Parsed:', parsed);
+            batchId = parsed.batchId;
+        } catch (e) {
+            // Plain text batch ID
+            batchId = qrData.trim();
         }
         
-        console.log('🎯 Extracted Batch ID:', batchId);
+        console.log('🎯 Batch ID:', batchId);
         
-        if (batchId !== null && batchId !== undefined) {
-            showToast('✅ QR Detected! Downloading Batch #' + batchId, 'success');
-            
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Call download function directly
-            await downloadBatchInfoFromQR(batchId);
-        } else {
-            showToast('⚠️ No valid batch ID found in QR code', 'warning');
-            console.error('❌ Invalid QR data:', qrData);
+        if (!batchId) {
+            showToast('❌ No batch ID found', 'error');
+            return;
         }
+        
+        // CRITICAL: Fetch from blockchain, NOT from QR data
+        showToast('🔄 Fetching batch #' + batchId + ' from blockchain...', 'info');
+        
+        await fetchAndDownloadBatchDetails(batchId);
+        
     } catch (error) {
-        console.error('❌ QR handling error:', error);
+        console.error('❌ Error:', error);
         showToast('❌ Error: ' + error.message, 'error');
     }
 }
 
 /**
- * Download batch info as TXT - Called from QR scan
+ * FETCH from blockchain and download as TXT
  */
-async function downloadBatchInfoFromQR(batchId) {
-    console.log('📥 Starting download for batch:', batchId);
+async function fetchAndDownloadBatchDetails(batchId) {
+    console.log('🔗 Fetching batch', batchId, 'from blockchain...');
     
     if (!contract) {
-        showToast('❌ Contract not connected. Please connect wallet.', 'error');
+        showToast('❌ Please connect wallet first', 'error');
         return;
     }
     
     try {
         showLoading(true);
         
-        console.log('🔗 Fetching from contract...');
-        
-        // Fetch batch data
+        // FETCH FROM BLOCKCHAIN (not from QR data!)
+        console.log('⛓️ Calling contract.getBatch()...');
         const batch = await contract.getBatch(batchId);
-        console.log('✅ Batch data:', batch);
+        console.log('✅ Batch:', batch);
         
+        console.log('⛓️ Calling contract.getBatchTransactions()...');
         const transactions = await contract.getBatchTransactions(batchId);
-        console.log('✅ Transactions:', transactions);
+        console.log('✅ Transactions:', transactions.length);
         
+        console.log('⛓️ Calling contract.getBatchParticipants()...');
         const participants = await contract.getBatchParticipants(batchId);
-        console.log('✅ Participants:', participants);
+        console.log('✅ Participants:', participants.length);
         
-        // State names
+        // Build TXT content with REAL blockchain data
         const stateNames = ['Created', 'InTransit', 'AtMiddleman', 'InFinalTransit', 'Delivered', 'Sold'];
         
-        // Build text content
-        let txt = `========================================\n`;
-        txt += `   AGRICULTURAL SUPPLY CHAIN\n`;
-        txt += `        BATCH INFORMATION\n`;
-        txt += `========================================\n\n`;
+        let content = '';
+        content += '========================================\n';
+        content += '   AGRICULTURAL SUPPLY CHAIN\n';
+        content += '      BLOCKCHAIN BATCH DETAILS\n';
+        content += '========================================\n\n';
         
-        txt += `BATCH DETAILS:\n`;
-        txt += `----------------------------------------\n`;
-        txt += `Batch ID: ${batchId}\n`;
-        txt += `Product Name: ${batch[3] || 'N/A'}\n`;
-        txt += `Quantity: ${batch[6]?.toString() || '0'} kg\n`;
-        txt += `Farmer Price: ${batch[5] ? ethers.formatEther(batch[5]) : '0'} ETH\n`;
-        txt += `Current State: ${stateNames[Number(batch[7])] || 'Unknown'}\n`;
-        txt += `Created: ${batch[8] ? new Date(Number(batch[8]) * 1000).toLocaleString() : 'N/A'}\n\n`;
+        content += 'BATCH INFORMATION:\n';
+        content += '----------------------------------------\n';
+        content += 'Batch ID: ' + batchId + '\n';
+        content += 'Product: ' + (batch[3] || 'N/A') + '\n';
+        content += 'Quantity: ' + (batch[6]?.toString() || '0') + ' kg\n';
+        content += 'Price: ' + (batch[5] ? ethers.formatEther(batch[5]) : '0') + ' ETH\n';
+        content += 'Status: ' + (stateNames[Number(batch[7])] || 'Unknown') + '\n';
+        content += 'Created: ' + (batch[8] ? new Date(Number(batch[8]) * 1000).toLocaleString() : 'N/A') + '\n\n';
         
-        txt += `FARMER INFORMATION:\n`;
-        txt += `----------------------------------------\n`;
-        txt += `Farmer Address: ${batch[1] || 'N/A'}\n`;
-        txt += `Current Owner: ${batch[2] || 'N/A'}\n\n`;
+        content += 'FARMER:\n';
+        content += '----------------------------------------\n';
+        content += 'Address: ' + (batch[1] || 'N/A') + '\n';
+        content += 'Owner: ' + (batch[2] || 'N/A') + '\n\n';
         
         if (participants && participants.length > 0) {
-            txt += `SUPPLY CHAIN PARTICIPANTS:\n`;
-            txt += `----------------------------------------\n`;
+            content += 'PARTICIPANTS:\n';
+            content += '----------------------------------------\n';
             participants.forEach((addr, i) => {
-                txt += `${i + 1}. ${addr}\n`;
+                content += (i + 1) + '. ' + addr + '\n';
             });
-            txt += `\n`;
+            content += '\n';
         }
         
         if (transactions && transactions.length > 0) {
-            txt += `TRANSACTION HISTORY:\n`;
-            txt += `----------------------------------------\n`;
+            content += 'TRANSACTION HISTORY:\n';
+            content += '----------------------------------------\n';
             transactions.forEach((tx, i) => {
-                txt += `\nTransaction ${i + 1}:\n`;
-                txt += `  From: ${tx.from}\n`;
-                txt += `  To: ${tx.to}\n`;
-                txt += `  Amount: ${ethers.formatEther(tx.amount)} ETH\n`;
-                txt += `  Role: ${tx.role}\n`;
-                txt += `  Date: ${new Date(Number(tx.timestamp) * 1000).toLocaleString()}\n`;
+                content += '\n#' + (i + 1) + ':\n';
+                content += '  From: ' + tx.from + '\n';
+                content += '  To: ' + tx.to + '\n';
+                content += '  Amount: ' + ethers.formatEther(tx.amount) + ' ETH\n';
+                content += '  Role: ' + tx.role + '\n';
+                content += '  Time: ' + new Date(Number(tx.timestamp) * 1000).toLocaleString() + '\n';
                 if (tx.description) {
-                    txt += `  Description: ${tx.description}\n`;
+                    content += '  Note: ' + tx.description + '\n';
                 }
             });
-            txt += `\n`;
+            content += '\n';
         }
         
-        txt += `========================================\n`;
-        txt += `Generated: ${new Date().toLocaleString()}\n`;
-        txt += `Blockchain Verified\n`;
-        txt += `========================================\n`;
+        content += '========================================\n';
+        content += 'Generated: ' + new Date().toLocaleString() + '\n';
+        content += 'Verified on Blockchain\n';
+        content += '========================================\n';
         
-        console.log('📄 Text content created, length:', txt.length);
+        console.log('📄 Content length:', content.length, 'chars');
+        console.log('📄 Preview:', content.substring(0, 200));
         
-        // Create and download file
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+        // Download the file
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Batch-${batchId}-${Date.now()}.txt`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Batch-' + batchId + '-Details.txt';
+        document.body.appendChild(a);
+        a.click();
         
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
         
-        console.log('✅ File downloaded successfully!');
-        showToast('✅ Batch #' + batchId + ' downloaded as TXT!', 'success');
+        console.log('✅ Download complete!');
+        showToast('✅ Batch #' + batchId + ' details downloaded!', 'success');
         
     } catch (error) {
-        console.error('❌ Download failed:', error);
+        console.error('❌ Blockchain fetch failed:', error);
         
-        if (error.message.includes('Batch not found')) {
-            showToast('❌ Batch #' + batchId + ' does not exist', 'error');
-        } else if (error.message.includes('call revert')) {
-            showToast('❌ Contract error - batch may not exist', 'error');
+        if (error.message && error.message.includes('Batch not found')) {
+            showToast('❌ Batch #' + batchId + ' not found on blockchain', 'error');
         } else {
-            showToast('❌ Failed: ' + error.message, 'error');
+            showToast('❌ Failed to fetch: ' + error.message, 'error');
         }
     } finally {
         showLoading(false);
@@ -1034,33 +1031,25 @@ async function downloadBatchInfoFromQR(batchId) {
 }
 
 /**
- * Stop QR Scanner
+ * Stop scanner
  */
 function stopQRScanner() {
     qrScannerActive = false;
-    
     if (qrStream) {
-        qrStream.getTracks().forEach(track => track.stop());
+        qrStream.getTracks().forEach(t => t.stop());
         qrStream = null;
     }
-    
     const video = document.getElementById('qrVideo');
-    const scannerContainer = document.getElementById('qrScannerContainer');
-    
-    if (video) {
-        video.srcObject = null;
-    }
-    
-    if (scannerContainer) {
-        scannerContainer.style.display = 'none';
-    }
+    const container = document.getElementById('qrScannerContainer');
+    if (video) video.srcObject = null;
+    if (container) container.style.display = 'none';
 }
 
 /**
- * Start QR Scanner
+ * Start scanner
  */
 async function scanQRCode() {
-    const scannerContainer = document.getElementById('qrScannerContainer');
+    const container = document.getElementById('qrScannerContainer');
     const video = document.getElementById('qrVideo');
     
     try {
@@ -1074,47 +1063,43 @@ async function scanQRCode() {
         });
         
         video.srcObject = qrStream;
-        video.play();
-        scannerContainer.style.display = 'block';
+        await video.play();
+        container.style.display = 'block';
         qrScannerActive = true;
         
-        showToast('📷 Scanner active - Point at QR code', 'info');
-        
+        showToast('📷 Scanner active', 'info');
         requestAnimationFrame(scanFrame);
         
     } catch (error) {
         console.error('Camera error:', error);
-        
         if (error.name === 'NotAllowedError') {
-            showToast('❌ Camera access denied', 'error');
-        } else if (error.name === 'NotFoundError') {
-            showToast('❌ No camera found', 'error');
+            showToast('❌ Camera permission denied', 'error');
         } else {
-            showToast('❌ Camera error: ' + error.message, 'error');
+            showToast('❌ Camera error', 'error');
         }
     }
 }
 
 /**
- * Scan video frame for QR code
+ * Scan frame
  */
 function scanFrame() {
     if (!qrScannerActive) return;
     
     const video = document.getElementById('qrVideo');
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (code) {
-            console.log('✅ QR Code detected!');
+            console.log('✅ QR detected!');
             handleQRCodeDetected(code.data);
             return;
         }
@@ -1122,10 +1107,6 @@ function scanFrame() {
     
     requestAnimationFrame(scanFrame);
 }
-
-// Make function available globally
-window.downloadBatchInfoFromQR = downloadBatchInfoFromQR;
-
 function initializeEventListeners() {
     document.getElementById('connectWallet').addEventListener('click', connectWallet);
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
