@@ -3,7 +3,7 @@ const hre = require("hardhat");
 
 async function main() {
     const CONTRACT_ADDRESS = "0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164";
-    const USER_ADDRESS = "0x39A0BE5AEceB841831571d1FA9323edE28d86659";//"0x45D246d7749936E61399E61Fc7e04e090aEDECE1"; // Your address
+    const USER_ADDRESS = "0x45D246d7749936E61399E61Fc7e04e090aEDECE1"; // Your address
     
     console.log(" Granting roles...");
     console.log("Contract:", CONTRACT_ADDRESS);
