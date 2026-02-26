@@ -4,7 +4,7 @@
 
 // ==================== CONFIGURATION ====================
 const CONFIG = {
-    CONTRACT_ADDRESS: "0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164",
+    CONTRACT_ADDRESS: "",
     NETWORK_ID: 11155111, // Sepolia testnet
     NETWORK_NAME: "Sepolia",
     RPC_URLS: [
