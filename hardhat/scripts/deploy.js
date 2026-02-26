@@ -125,5 +125,3 @@ main()
     process.exit(1);
   });
 
-//contract address : 0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164
-//verify address   : https://sepolia.etherscan.io/address/0x10DA8a6Ff9d8776Df7E6E2C4Aad751320eE26164#code
